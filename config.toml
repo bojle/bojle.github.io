@@ -3,6 +3,7 @@ title = "Shreeyash Pandey" # Site title.
 theme = "coder-portfolio" # Set the theme.
 languagecode = "en" # The site’s language code used to generate RSS.
 defaultcontentlanguage = "en" # The default content language.
+publishDir = "docs"
 
 paginate = 20 # Default number of pages per page in pagination.
 
