@@ -1,0 +1,9 @@
+[submodule "themes/coder-portfolio"]
+	path = themes/coder-portfolio
+	url = https://github.com/naro143/hugo-coder-portfolio
+[submodule "themes/hugo-tanka"]
+	path = themes/hugo-tanka
+	url = https://github.com/nanxstats/hugo-tanka.git
+[submodule "themes/archie.git"]
+	path = themes/archie.git
+	url = https://github.com/athul/archie.git

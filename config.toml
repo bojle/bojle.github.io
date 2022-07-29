@@ -1,0 +1,85 @@
+baseurl = "http://bojle.github.io"
+title = "Shreeyash Pandey" # Site title.
+theme = "coder-portfolio" # Set the theme.
+languagecode = "en" # The site’s language code used to generate RSS.
+defaultcontentlanguage = "en" # The default content language.
+
+paginate = 20 # Default number of pages per page in pagination.
+
+pygmentsstyle = "b2" # Color-theme or style for syntax highlighting.
+pygmentscodefences = true # Enable code fence background highlighting.
+pygmentscodefencesguesssyntax = true # Enable syntax guessing for code fences without specified language.
+pygmentsUseClasses = true # new add
+
+disqusShortname = "yourdiscussshortname" # Enable or disable Disqus.
+
+[params] # theme parameters
+    author = "Shreeyash Pandey" # Author's name.
+    info = "Firmware and Embedded Systems Engineer" # Author's job title or info.
+    description = "Shreeyash's personal website" # Site description.
+    keywords = "blog,developer,personal" # Site keywords.
+    avatarurl = "images/fall.jpg" # Contain the path of the optionnal avatar in the static folder.
+
+    footercontent = ""
+    fixedbarContent = "" # Add fixedbar content
+    fixedbarContentAfter = "" # Add fixedbar content after click
+
+    # Whether you want to hide copyright and credits in the footer.
+    hideCredits = false
+    hideCopyright = false
+
+    # Custom CSS
+    custom_css = []
+
+    # Alignment of Mobile Menu items
+    itemscentered = true
+
+    # RTL support
+    rtl = false
+
+    # Bottom sns share
+    snsShare = false # new add
+    # Popular sns share
+    # if you want add sns. please message!
+    enableTwitterShare = true  # new add
+    enableFacebookShare = true # new add
+    enableHatenaShare = true   # new add
+    enableLineShare = true     # new add
+    enableLinkedInShare = true # new add
+
+    thumbnail = "images/tn.png" # default sns thumbnail
+
+    # Multilanguage mode
+    langseparator = "|" # Separates menus from language selectors when site is multilingual.
+
+# Social links
+[[params.social]]
+    name = "Github"
+    icon = "fab fa-github"
+    weight = 1
+    url = "https://github.com/bojle"
+#[[params.social]]
+#    name = "Twitter"
+#    icon = "fab fa-twitter"
+#    weight = 2
+#    url = ""
+[[params.social]]
+    name = "LinkedIn"
+    icon = "fab fa-linkedin"
+    weight = 3
+    url = "https://www.linkedin.com/in/shreeyash-pandey"
+#[[params.social]]
+#    # If icon is not set, Text is displayed.
+#    name = "LinkedIn"
+#    weight = 4
+#    url = "https://www.linkedin.com/in/naro143/"
+
+# Menu links
+[[menu.main]]
+    name = "Blog"
+    weight = 1
+    url  = "content/posts"
+[[menu.main]]
+    name = "About"
+    weight = 2
+    url = "content/about"
