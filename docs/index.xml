@@ -2,19 +2,19 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Shreeyash Pandey</title>
-    <link>http://bojle.github.io/</link>
+    <link>https://bojle.github.io/</link>
     <description>Recent content on Shreeyash Pandey</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Fri, 29 Jul 2022 13:51:55 +0530</lastBuildDate><atom:link href="http://bojle.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Fri, 29 Jul 2022 13:51:55 +0530</lastBuildDate><atom:link href="https://bojle.github.io/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title></title>
-      <link>http://bojle.github.io/posts/first-post/</link>
+      <title>First post</title>
+      <link>https://bojle.github.io/posts/first-post/</link>
       <pubDate>Fri, 29 Jul 2022 13:51:55 +0530</pubDate>
       
-      <guid>http://bojle.github.io/posts/first-post/</guid>
+      <guid>https://bojle.github.io/posts/first-post/</guid>
       <description>Hello This is my post yeah?
-Heading 2 </description>
+Heading 2 more post</description>
     </item>
     
   </channel>

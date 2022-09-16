@@ -1,4 +1,4 @@
-baseurl = "http://bojle.github.io"
+baseurl = "https://bojle.github.io"
 title = "Shreeyash Pandey" # Site title.
 theme = "coder-portfolio" # Set the theme.
 languagecode = "en" # The site’s language code used to generate RSS.
