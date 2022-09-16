@@ -79,8 +79,8 @@ disqusShortname = "yourdiscussshortname" # Enable or disable Disqus.
 [[menu.main]]
     name = "Blog"
     weight = 1
-    url  = "content/posts"
+    url  = "posts/"
 [[menu.main]]
     name = "About"
     weight = 2
-    url = "content/about"
+    url = "about/"
