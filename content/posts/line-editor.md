@@ -1,7 +1,7 @@
 +++ 
-draft = false
+draft = true
 date = 2022-07-29T13:51:55+05:30
-title = "First post"
+title = "Write yourself a line based text editor from scratch in C"
 slug = "" 
 tags = []
 categories = []

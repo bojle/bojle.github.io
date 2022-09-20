@@ -2,16 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://bojle.github.io/posts/first-post/</loc>
-    <lastmod>2022-07-29T13:51:55+05:30</lastmod>
-  </url><url>
-    <loc>https://bojle.github.io/posts/</loc>
-    <lastmod>2022-07-29T13:51:55+05:30</lastmod>
-  </url><url>
-    <loc>https://bojle.github.io/</loc>
-    <lastmod>2022-07-29T13:51:55+05:30</lastmod>
+    <loc>https://bojle.github.io/about/</loc>
+    <lastmod>2022-09-20T15:55:17+05:30</lastmod>
   </url><url>
     <loc>https://bojle.github.io/categories/</loc>
+  </url><url>
+    <loc>https://bojle.github.io/</loc>
   </url><url>
     <loc>https://bojle.github.io/tags/</loc>
   </url>
