@@ -14,3 +14,9 @@ what attracts me to it.
 I would be delighted to collaborate on any projects or research related to my
 interests highlighted throughout the site.
 
+Contact: 
+
+Email: shreeyashthefirst [at] gmail [dot] com
+
+Github: [https://github.com/bojle](https://github.com/bojle)
+

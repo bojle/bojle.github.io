@@ -7,6 +7,15 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language><atom:link href="https://bojle.github.io/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Projects</title>
+      <link>https://bojle.github.io/projects/</link>
+      <pubDate>Tue, 20 Sep 2022 19:03:15 +0530</pubDate>
+      
+      <guid>https://bojle.github.io/projects/</guid>
+      <description>Here lies projects </description>
+    </item>
+    
+    <item>
       <title>About</title>
       <link>https://bojle.github.io/about/</link>
       <pubDate>Tue, 20 Sep 2022 15:55:17 +0530</pubDate>

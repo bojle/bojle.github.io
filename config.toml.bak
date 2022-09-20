@@ -53,16 +53,38 @@ disqusShortname = "yourdiscussshortname" # Enable or disable Disqus.
     # Multilanguage mode
     langseparator = "|" # Separates menus from language selectors when site is multilingual.
 
+# Social links
+[[params.social]]
+    name = "Github"
+    icon = "fab fa-github"
+    weight = 1
+    url = "https://github.com/bojle"
+#[[params.social]]
+#    name = "Twitter"
+#    icon = "fab fa-twitter"
+#    weight = 2
+#    url = ""
+[[params.social]]
+    name = "LinkedIn"
+    icon = "fab fa-linkedin"
+    weight = 3
+    url = "https://www.linkedin.com/in/shreeyash-pandey"
+#[[params.social]]
+#    # If icon is not set, Text is displayed.
+#    name = "LinkedIn"
+#    weight = 4
+#    url = "https://www.linkedin.com/in/naro143/"
+
 # Menu links
 [[menu.main]]
     name = "Projects"
-    weight = 1
+    weight = 2
     url = "projects/"
 [[menu.main]]
     name = "Blog"
-    weight = 2
+    weight = 1
     url  = "posts/"
 [[menu.main]]
     name = "About"
-    weight = 3
+    weight = 2
     url = "about/"
