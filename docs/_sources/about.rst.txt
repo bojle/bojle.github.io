@@ -8,7 +8,7 @@ AI-accelerators, In-memory Computing) and Operating Systems (Compilers, Linux Ke
 
 This is my place on the Internet.
 
-If it isn't already obvious, THIS WEBSITE IS:
+If it isn't already obvious, this website is UNDER HEAVY CONSTRUSTION
 
 .. image:: _static/underc.gif
     :alt: Under the Constructionism
