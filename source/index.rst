@@ -14,11 +14,8 @@ Welcome to Bojle's Webpage!
 Indices and tables
 ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+* :ref:`What I am reading this sunday (Paper Sundays)<this_sunday>`
+* :ref:`About <about>`
 * :ref:`search`
-
-Articles
-========
-
-* :ref:`Read my sample article <article_sample>`

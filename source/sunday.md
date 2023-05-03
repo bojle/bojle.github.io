@@ -1,0 +1,12 @@
+# Paper Reading Sundays
+
+Every Sunday, I shall update this page with an interesting (to me) paper related
+mostly to Computers. 
+
+## March 26, 2023
+
+This week: [Cramming More Components onto integrated circuits - Gordon Moore (1975)](https://www.cs.utexas.edu/~fussell/courses/cs352h/papers/moore.pdf)
+
+## April 02, 2023
+
+This week: [Parallelism through Digital Circuit Design - John O’Donnell](https://drops.dagstuhl.de/opus/volltexte/2008/1372/pdf/07361.ODonnellJohn.Paper.1372.pdf)
