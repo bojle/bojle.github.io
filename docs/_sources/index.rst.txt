@@ -7,15 +7,18 @@ Welcome to Bojle's Webpage!
 =================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :titlesonly:
 
+   Paper Sundays <sunday>
+   Links <links>
+   About Me <about>
 
 Indices and tables
 ==================
 
 .. * :ref:`genindex`
 .. * :ref:`modindex`
+
 * :ref:`What I am reading this sunday (Paper Sundays)<this_sunday>`
 * :ref:`About <about>`
 * :ref:`search`
