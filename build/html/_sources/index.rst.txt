@@ -13,12 +13,14 @@ Welcome to Bojle's Webpage!
    Links <links>
    About Me <about>
 
-Indices and tables
-==================
+.. comment
 
-.. * :ref:`genindex`
-.. * :ref:`modindex`
+    Indices and tables
+    ==================
 
-* :ref:`What I am reading this sunday (Paper Sundays)<this_sunday>`
-* :ref:`About <about>`
-* :ref:`search`
+    .. * :ref:`genindex`
+    .. * :ref:`modindex`
+
+    * :ref:`What I am reading this sunday (Paper Sundays)<this_sunday>`
+    * :ref:`About <about>`
+    * :ref:`search`

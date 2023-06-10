@@ -15,7 +15,7 @@ If it isn't already obvious, this website is UNDER HEAVY CONSTRUSTION
     :align: center
 
 Contact
-========
+--------
 
 **Email**: shreeyash335 [at] big G's mail service [dot] com
 
