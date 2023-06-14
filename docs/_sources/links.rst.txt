@@ -3,8 +3,8 @@
 Links
 ======
 
-Hacking
--------
+On Hacking
+----------
 
 -  `Hacker How To - Eric
    Raymond <http://www.catb.org/~esr/faqs/hacker-howto.html>`__
@@ -16,17 +16,6 @@ Hacking
 -  `Write a Video Player in
    C <http://dranger.com/ffmpeg/tutorial01.html>`__
 
-Other Compilations of Books or Links
-------------------------------------
-
--  `List of compiler
-   books <https://gcc.gnu.org/wiki/ListOfCompilerBooks>`__
--  `Freely Available CS
-   Textbooks <https://csgordon.github.io/books.html>`__
--  `Online Math
-   Textbooks <http://people.math.gatech.edu/~cain/textbooks/onlinebooks.html>`__
--  `Operating Systems <https://port70.net/~nsz/06_os.html>`__
-
 On Learning
 -----------
 
@@ -35,6 +24,8 @@ On Learning
 -  `What I learned building a parallel processor company from scratch -
    Andreas
    Olofsson <https://parallella.org/wp-content/uploads/2017/01/hipeac_lessons.pdf>`__
+- `Principles of Effective Research - Michael Nielsen
+  <https://michaelnielsen.org/blog/principles-of-effective-research/>`__
 
 Books
 -----
@@ -68,6 +59,17 @@ Books
    weekend <https://raytracing.github.io/books/RayTracingInOneWeekend.html>`__
 -  `Concise Electronics for
    Geeks <https://lcamtuf.coredump.cx/electronics/>`__
+
+Other Compilations of Books or Links
+------------------------------------
+
+-  `List of compiler
+   books <https://gcc.gnu.org/wiki/ListOfCompilerBooks>`__
+-  `Freely Available CS
+   Textbooks <https://csgordon.github.io/books.html>`__
+-  `Online Math
+   Textbooks <http://people.math.gatech.edu/~cain/textbooks/onlinebooks.html>`__
+-  `Operating Systems <https://port70.net/~nsz/06_os.html>`__
 
 Courses
 -------
