@@ -3,12 +3,13 @@
 About
 ======
 
-Computer Engineer with special interest in Computer Architectures (Domain Specific Computation,
-AI-accelerators, In-memory Computing) and Operating Systems (Compilers, Linux Kernel etc.).
+Computer Engineer with special interest in Computer Architectures (especially,
+design of hardware accelerators for DNN workloads, as well as the design of
+programming interfaces for such accelerators), Compilers, Operating Systems etc.
 
 This is my place on the Internet.
 
-If it isn't already obvious, this website is UNDER HEAVY CONSTRUSTION
+This website is:
 
 .. image:: _static/underc.gif
     :alt: Under the Constructionism
