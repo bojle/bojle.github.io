@@ -27,6 +27,8 @@ On Learning
 - `Principles of Effective Research - Michael Nielsen
   <https://michaelnielsen.org/blog/principles-of-effective-research/>`__
 
+- `Avoiding Classic Mistakes [In Software Engineering] - Steve McConnell <https://stevemcconnell.com/wp-content/uploads/2017/08/ClassicMistakes.pdf>`__
+
 Books
 -----
 
