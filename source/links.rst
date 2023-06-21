@@ -26,8 +26,9 @@ On Learning
    Olofsson <https://parallella.org/wp-content/uploads/2017/01/hipeac_lessons.pdf>`__
 - `Principles of Effective Research - Michael Nielsen
   <https://michaelnielsen.org/blog/principles-of-effective-research/>`__
-
-- `Avoiding Classic Mistakes [In Software Engineering] - Steve McConnell <https://stevemcconnell.com/wp-content/uploads/2017/08/ClassicMistakes.pdf>`__
+- `Avoiding Classic Mistakes [In Software Engineering] - Steve McConnell
+  <https://stevemcconnell.com/wp-content/uploads/2017/08/ClassicMistakes.pdf>`__
+- `Infinite Monkeys - Wisom of Hacker News <https://thomshutt.github.io/infinite-monkeys/>`__
 
 Books
 -----
