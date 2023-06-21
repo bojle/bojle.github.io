@@ -18,6 +18,6 @@ This website is:
 Contact
 --------
 
-**Email**: shreeyash335 [at] big G's mail service [dot] com
-
-**Github**: `bojle <http://github.com/bojle>`_
+| **Email**: shreeyash335 [at] big G's mail service [dot] com
+| **Github**: `bojle <http://github.com/bojle>`_
+| **Twitter**: `b0jle <https://twitter.com/b0jle>`_

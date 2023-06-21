@@ -29,6 +29,7 @@ On Learning
 - `Avoiding Classic Mistakes [In Software Engineering] - Steve McConnell
   <https://stevemcconnell.com/wp-content/uploads/2017/08/ClassicMistakes.pdf>`__
 - `Infinite Monkeys - Wisom of Hacker News <https://thomshutt.github.io/infinite-monkeys/>`__
+- `Reflections on my CS PhD Application Process - Bodun Hu <https://www.bodunhu.com/blog/posts/reflections-on-my-cs-phd-application-process/>`__
 
 Books
 -----
