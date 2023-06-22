@@ -28,8 +28,9 @@ On Learning
   <https://michaelnielsen.org/blog/principles-of-effective-research/>`__
 - `Avoiding Classic Mistakes [In Software Engineering] - Steve McConnell
   <https://stevemcconnell.com/wp-content/uploads/2017/08/ClassicMistakes.pdf>`__
-- `Infinite Monkeys - Wisom of Hacker News <https://thomshutt.github.io/infinite-monkeys/>`__
+- `Infinite Monkeys - Wisdom of Hacker News <https://thomshutt.github.io/infinite-monkeys/>`__
 - `Reflections on my CS PhD Application Process - Bodun Hu <https://www.bodunhu.com/blog/posts/reflections-on-my-cs-phd-application-process/>`__
+- `Lessons from my PhD - Austin Henley <https://austinhenley.com/blog/lessonsfrommyphd.html>`__
 
 Books
 -----
