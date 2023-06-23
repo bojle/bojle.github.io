@@ -3,8 +3,9 @@
 Paper Reading Sundays
 =====================
 
-Every Sunday, I shall update this page with an interesting (to me) paper
-related mostly to Computers.
+This page serves as the repository where I document intriguing research articles primarily focused on the field of computers that capture my interest.
+
+The intended schedule for updating this page is *every Sunday*, although there may be instances where I may not be able to maintain it consistently.
 
 March 26, 2023
 --------------
