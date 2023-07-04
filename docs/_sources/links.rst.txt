@@ -31,6 +31,7 @@ On Learning
 - `Infinite Monkeys - Wisdom of Hacker News <https://thomshutt.github.io/infinite-monkeys/>`__
 - `Reflections on my CS PhD Application Process - Bodun Hu <https://www.bodunhu.com/blog/posts/reflections-on-my-cs-phd-application-process/>`__
 - `Lessons from my PhD - Austin Henley <https://austinhenley.com/blog/lessonsfrommyphd.html>`__
+- `How To Do Great Work - Paul Graham <http://paulgraham.com/greatwork.html>`__
 
 Books
 -----
