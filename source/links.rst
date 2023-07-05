@@ -15,6 +15,8 @@ On Hacking
    Wheeler <https://dwheeler.com/essays/fixing-unix-linux-filenames.html>`__
 -  `Write a Video Player in
    C <http://dranger.com/ffmpeg/tutorial01.html>`__
+- `Writing a C compiler <https://norasandler.com/2017/11/29/Write-a-Compiler.html>`__
+
 
 On Learning
 -----------
@@ -71,6 +73,7 @@ Other Compilations of Books or Links
 
 -  `List of compiler
    books <https://gcc.gnu.org/wiki/ListOfCompilerBooks>`__
+- `Resources for Amateur Compiler Writers <https://c9x.me/compile/bib/>`__
 -  `Freely Available CS
    Textbooks <https://csgordon.github.io/books.html>`__
 -  `Online Math
