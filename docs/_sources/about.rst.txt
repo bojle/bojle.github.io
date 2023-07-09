@@ -3,17 +3,17 @@
 About
 ======
 
+.. image:: https://upload.wikimedia.org/wikipedia/commons/0/00/Modern_Loose_Reed_Power_Loom-marsden.png
+    :alt: Reed Power Loom
+    :width: 400
+    :align: center
+
 Computer Engineer with special interest in Computer Architectures (especially,
 design of hardware accelerators for DNN workloads, as well as the design of
 programming interfaces for such accelerators), Compilers, Operating Systems etc.
 
 This is my place on the Internet.
 
-This website is:
-
-.. image:: _static/underc.gif
-    :alt: Under the Constructionism
-    :align: center
 
 Contact
 --------
