@@ -16,6 +16,7 @@ On Hacking
 -  `Write a Video Player in
    C <http://dranger.com/ffmpeg/tutorial01.html>`__
 - `Writing a C compiler <https://norasandler.com/2017/11/29/Write-a-Compiler.html>`__
+- `Write a LLVM backend for cpu0 architecture <https://jonathan2251.github.io/lbd/llvmstructure.html>`__
 
 
 On Learning
