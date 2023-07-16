@@ -43,3 +43,27 @@ This week: `The Hardware Lottery - Sara Hooker [2020] <https://hardwarelottery.g
 * Special-purpose hardware can only be built for purposes that have lasting relevance, which influences research to focus in that direction.
 
 * Moreover, deep learning may or may not be the sole approach to achieve human-like intelligence. Exploring alternative methods will provide insights into this question, but only if those ideas succeed in the hardware lottery.
+
+July 16, 2023
+-------------
+
+This week: `How to be an effective researcher - Michael Nielsen <https://michaelnielsen.org/blog/principles-of-effective-research/>`__
+
+**Key Points**:
+
+* Common sense principles are not necessarily commonly practised
+* Motivation and desire can be changed
+* Have fun while doing research, stay healthy, and spend time with your family.
+* "Anyone could do that", but nobody does
+* Proactivty not reactivity towards situations
+* Three factors responsible in achieving self-discipline: clarity, social
+  environment, honesty
+* Improve your environment
+* There are problem solver and problem creators. Problem solvers find solutions
+  to existing problems and creators think of newer problems .
+* For problem solvers, have multiple solutions (don't stick just one)
+* Creator's needs: taste and standard for whats important (unimportant problems
+  are different to uninteresting problems). 
+* Dont chase public appreciation with your research but at the same time, keep
+  in mind what the research landscape as a whole requires. These constitute
+  important problems.
