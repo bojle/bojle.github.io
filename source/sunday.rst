@@ -67,3 +67,21 @@ This week: `How to be an effective researcher - Michael Nielsen <https://michael
 * Dont chase public appreciation with your research but at the same time, keep
   in mind what the research landscape as a whole requires. These constitute
   important problems.
+
+July 30, 2023
+-------------
+
+This week: `Producing wrong data without doing anything obviously wrong! - Mytkowicz et. al. <https://dl.acm.org/doi/10.1145/1508284.1508275>`__
+
+* *Measurement bias* is the phenomenon where faulty collection or data or
+  invalid reasoning towards a conclusion as a result of faulty data causes
+  incorrect understanding of a process being investigated.
+* Measurement bias is ubiquitous and more often than not unpredictable.
+* Detection and avoidance tends to be the best strategy to deal with it.
+* Causal analysis is a general technique for determining if we have reached an
+  incorrect conclusion from our data. Three step procedure: Suppose X causes Y
+  is a conclusion. But there is a chance Z could be causing Y. First, create an
+  **Intervention** to X. Change the system and **Measure** X. Now, **Confirm**
+  if Y changes when X changed, if it did, our conclusion is correct.
+* Causal analysis is not a way to acquire flawless data, rather it is to assure
+  ourselves that the conclusions we reach after are valid.
