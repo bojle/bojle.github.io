@@ -19,6 +19,7 @@ On Hacking
 - `Write a LLVM backend for cpu0 architecture <https://jonathan2251.github.io/lbd/llvmstructure.html>`__
 - `Architecture of Open Source Projects - Various Authors <https://aosabook.org/en/>`__
 - `Linus Torvalds' linked list argument for good taste, explained <https://github.com/mkirchner/linked-list-good-taste>`__
+- `Felix Winkleman's Website <http://call-with-current-continuation.org/>`
 
 
 On Learning
