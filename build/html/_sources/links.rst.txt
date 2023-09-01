@@ -20,6 +20,8 @@ On Hacking
 - `Architecture of Open Source Projects - Various Authors <https://aosabook.org/en/>`__
 - `Linus Torvalds' linked list argument for good taste, explained <https://github.com/mkirchner/linked-list-good-taste>`__
 - `Felix Winkleman's Website <http://call-with-current-continuation.org/>`__
+- `Continuations for Curmudgeons
+  <https://intertwingly.net/blog/2005/04/13/Continuations-for-Curmudgeons>`__
 
 
 On Learning

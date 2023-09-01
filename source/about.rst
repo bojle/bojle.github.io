@@ -3,6 +3,11 @@
 About
 ======
 
+.. code::
+
+                "The life so short, the craft so long to learn" 
+                                                  — Hippocrates
+
 .. image:: https://upload.wikimedia.org/wikipedia/commons/0/00/Modern_Loose_Reed_Power_Loom-marsden.png
     :alt: Reed Power Loom
     :width: 400
