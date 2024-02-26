@@ -22,6 +22,8 @@ On Hacking
 - `Felix Winkleman's Website <http://call-with-current-continuation.org/>`__
 - `Continuations for Curmudgeons
   <https://intertwingly.net/blog/2005/04/13/Continuations-for-Curmudgeons>`__
+- `Video Lan (VLC) Hacker's Guide <https://wiki.videolan.org/Hacker_Guide/Audio_Filters/>`__
+
 
 
 On Learning
