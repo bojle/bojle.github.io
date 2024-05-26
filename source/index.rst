@@ -1,26 +1,29 @@
-.. Bojle documentation master file, created by
-   sphinx-quickstart on Fri Apr 21 19:34:33 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Shreeyash's Webpage
+===================
 
-Welcome to Bojle's Webpage!
-=================================
+"*The life so short, the craft so long to learn*" 
+— Hippocrates
+
+.. image:: https://upload.wikimedia.org/wikipedia/commons/0/00/Modern_Loose_Reed_Power_Loom-marsden.png
+    :alt: Reed Power Loom
+    :width: 400
+    :align: center
+
+programmer, technical minimalist, appreciate all things creative. interested in fast computers.
+
+This is my place on the interwebz. Check out:
 
 .. toctree::
    :titlesonly:
+   :maxdepth: 1
 
+   Blog <blog/index>
    Paper Sundays <sunday>
    Links <links>
-   About Me <about>
 
-.. comment
+Contact
+--------
 
-    Indices and tables
-    ==================
-
-    .. * :ref:`genindex`
-    .. * :ref:`modindex`
-
-    * :ref:`What I am reading this sunday (Paper Sundays)<this_sunday>`
-    * :ref:`About <about>`
-    * :ref:`search`
+| **Email**: shreeyash335 [at] big G's mail service [dot] com
+| **Github**: `bojle <http://github.com/bojle>`_
+| **Twitter**: `b0jle <https://twitter.com/b0jle>`_
