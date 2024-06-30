@@ -3,32 +3,11 @@
 Links
 ======
 
-On Hacking
-----------
+Essays I've Liked
+-----------------
 
--  `Hacker How To - Eric
-   Raymond <http://www.catb.org/~esr/faqs/hacker-howto.html>`__
--  `Driver adventures for a 1999
-   webcam <https://blog.benjojo.co.uk/post/quickcam-usb-userspace-driver>`__
--  `Hackers Hut (2002) <https://www.win.tue.nl/~aeb/linux/hh/hh.html>`__
--  `Fixing Unix File Names - David
-   Wheeler <https://dwheeler.com/essays/fixing-unix-linux-filenames.html>`__
--  `Write a Video Player in
-   C <http://dranger.com/ffmpeg/tutorial01.html>`__
-- `Writing a C compiler <https://norasandler.com/2017/11/29/Write-a-Compiler.html>`__
-- `Write a LLVM backend for cpu0 architecture <https://jonathan2251.github.io/lbd/llvmstructure.html>`__
-- `Architecture of Open Source Projects - Various Authors <https://aosabook.org/en/>`__
-- `Linus Torvalds' linked list argument for good taste, explained <https://github.com/mkirchner/linked-list-good-taste>`__
-- `Felix Winkleman's Website <http://call-with-current-continuation.org/>`__
-- `Continuations for Curmudgeons
-  <https://intertwingly.net/blog/2005/04/13/Continuations-for-Curmudgeons>`__
-- `Video Lan (VLC) Hacker's Guide <https://wiki.videolan.org/Hacker_Guide/Audio_Filters/>`__
-
-
-
-On Learning
------------
-
+- `A Mathematician's Apology - G.H. Hardy [PDF]
+  <https://web.njit.edu/~akansu/PAPERS/GHHardy-AMathematiciansApology.pdf>`__
 -  `All I really need to know - David
    Stern <http://theory.caltech.edu/~preskill/all-i-really-need-to-know.pdf>`__
 -  `What I learned building a parallel processor company from scratch -
@@ -42,6 +21,22 @@ On Learning
 - `Reflections on my CS PhD Application Process - Bodun Hu <https://www.bodunhu.com/blog/posts/reflections-on-my-cs-phd-application-process/>`__
 - `Lessons from my PhD - Austin Henley <https://austinhenley.com/blog/lessonsfrommyphd.html>`__
 - `How To Do Great Work - Paul Graham <http://paulgraham.com/greatwork.html>`__
+- `Work Hard - Terence Tao
+  <https://terrytao.wordpress.com/career-advice/work-hard/>`__
+- `Turd Sandwiches and Purpose In Life - AvE [video]
+  <https://youtu.be/E7RgtMGL7CA?si=n-JG-tI3TODkEODk>`__
+
+Programming/Hacking
+-------------------
+
+-  `Hacker How To - Eric
+   Raymond <http://www.catb.org/~esr/faqs/hacker-howto.html>`__
+- `Architecture of Open Source Projects - Various Authors <https://aosabook.org/en/>`__
+- `Linus Torvalds' linked list argument for good taste, explained <https://github.com/mkirchner/linked-list-good-taste>`__
+- `Programming rants hosted on Felix Winkleman's (of chicken scheme fame) Website <http://call-with-current-continuation.org/>`__
+- `Continuations for Curmudgeons
+  <https://intertwingly.net/blog/2005/04/13/Continuations-for-Curmudgeons>`__
+- `Video Lan (VLC) Hacker's Guide <https://wiki.videolan.org/Hacker_Guide/Audio_Filters/>`__
 
 Books
 -----
@@ -91,19 +86,10 @@ Other Compilations of Books or Links
 Courses
 -------
 
--  `Reinforcement Learning - David
-   Silver <https://www.youtube.com/watch?v=2pWv7GOvuf0&list=PLzuuYNsE1EZAXYR4FJ75jcJseBmo4KQ9-&index=2>`__
 -  `SENG475 - Advanced
    CPP <https://www.ece.uvic.ca/~frodo/cppbook/#videos>`__
-
-Philosophy
-----------
-
--  `Philosophy Podcasts <https://philosophyring.neocities.org/>`__
 
 Misc
 ----
 
--  `Book search
-   engine <https://cse.google.com/cse?cx=011394183039475424659:5bfyqg89ers>`__
 -  `Simple Strength Fitness <https://ss.fitness/>`__

@@ -32,3 +32,4 @@ html_theme = 'alabaster'
 html_theme_path = [alabaster.get_path()]
 html_static_path = ['_static']
 html_css_files = ['css/custom.css']
+html_favicon = '_static/flying-katakana-man.ico'
