@@ -37,6 +37,8 @@ Programming/Hacking
 - `Continuations for Curmudgeons
   <https://intertwingly.net/blog/2005/04/13/Continuations-for-Curmudgeons>`__
 - `Video Lan (VLC) Hacker's Guide <https://wiki.videolan.org/Hacker_Guide/Audio_Filters/>`__
+- `Fast IO on Unixes by the way of 'yes' command
+  <https://www.reddit.com/r/unix/comments/6gxduc/how_is_gnu_yes_so_fast/>`__
 
 Books
 -----
