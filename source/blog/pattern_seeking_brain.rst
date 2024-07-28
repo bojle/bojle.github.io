@@ -68,7 +68,7 @@ the source, which is just a verilog file confirms that this are indeed the
 black-box modules.
 
 Conclusion
-##########
+**********
 
 In conclusion, file formats or any other type of data that are supposed to be 
 regular can be brute-forced by our pattern-seeking brains to reveal their 
