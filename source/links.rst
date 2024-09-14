@@ -52,6 +52,7 @@ Programming/Hacking
 - `Video Lan (VLC) Hacker's Guide <https://wiki.videolan.org/Hacker_Guide/Audio_Filters/>`__
 - `Fast IO on Unixes by the way of 'yes' command
   <https://www.reddit.com/r/unix/comments/6gxduc/how_is_gnu_yes_so_fast/>`__
+- `Greppability is an underrated code metric <https://morizbuesing.com/blog/greppability-code-metric/>`__
 
 Books
 -----
