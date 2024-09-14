@@ -24,6 +24,6 @@ This is my place on the interwebz. Check out:
 Contact
 --------
 
-| **Email**: shreeyash335 [at] big G's mail service [dot] com
+| **Email**: shreeyash [at] 16bits [dot] co [dot] in
 | **Github**: `bojle <http://github.com/bojle>`_
 | **Twitter**: `b0jle <https://twitter.com/b0jle>`_

@@ -26,6 +26,19 @@ Essays I've Liked
 - `Turd Sandwiches and Purpose In Life - AvE [video]
   <https://youtu.be/E7RgtMGL7CA?si=n-JG-tI3TODkEODk>`__
 
+Papers I've Liked
+-----------------
+
+- `Compiler Validation via Equivalence Modulo Inputs
+  <https://web.cs.ucdavis.edu/~su/publications/emi.pdf>`__
+
+Interesting approach to testing a program for faults. To summarize: For a set of
+inputs 'I' to a program 'P', 'P' can be divided into executed and unexecuted
+code ("dead code"). Re-ordering/manipulation on the dead code should cause no
+variance to the outputs for the inputs. This technique "EMI" allows one to 
+have many versions of a program (in this case, a compiler) and test for
+miscompilations.
+
 Programming/Hacking
 -------------------
 
