@@ -25,6 +25,8 @@ Essays I've Liked
   <https://terrytao.wordpress.com/career-advice/work-hard/>`__
 - `Turd Sandwiches and Purpose In Life - AvE [video]
   <https://youtu.be/E7RgtMGL7CA?si=n-JG-tI3TODkEODk>`__
+- `The TANDBERG Way - Olve Maudal
+  <https://youtu.be/34FLhwkrwoQ?si=QU1Q_wMIDMyzutwg>`__
 
 Papers I've Liked
 -----------------
@@ -53,6 +55,16 @@ Programming/Hacking
 - `Fast IO on Unixes by the way of 'yes' command
   <https://www.reddit.com/r/unix/comments/6gxduc/how_is_gnu_yes_so_fast/>`__
 - `Greppability is an underrated code metric <https://morizbuesing.com/blog/greppability-code-metric/>`__
+
+Blogs
+-----
+
+- `Josh Haberman <https://blog.reverberate.org/>`__
+- `John Regehr <https://blog.regehr.org/>`__
+- `Jannis Harder <https://jix.one/>`__
+- `Max Bernstein <https://bernsteinbear.com/blog/>`__
+- `Evan Martin <https://neugierig.org/software/blog/archive.html>`__
+- `Nirav Patel (of Framework) <https://eclecti.cc/>`__
 
 Books
 -----

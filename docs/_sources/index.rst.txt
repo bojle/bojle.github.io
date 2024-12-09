@@ -4,12 +4,12 @@ Shreeyash's Webpage
 "*The life so short, the craft so long to learn*" 
 — Hippocrates
 
-.. image:: https://upload.wikimedia.org/wikipedia/commons/0/00/Modern_Loose_Reed_Power_Loom-marsden.png
+.. image:: _static/loom.png
     :alt: Reed Power Loom
     :width: 400
     :align: center
 
-programmer, technical minimalist, appreciate all things creative. interested in fast computers.
+Programmer, Technical Minimalist, appreciate all things creative. Interested in fast computers.
 
 This is my place on the interwebz. Check out:
 
