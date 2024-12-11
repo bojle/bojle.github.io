@@ -27,6 +27,8 @@ Essays I've Liked
   <https://youtu.be/E7RgtMGL7CA?si=n-JG-tI3TODkEODk>`__
 - `The TANDBERG Way - Olve Maudal
   <https://youtu.be/34FLhwkrwoQ?si=QU1Q_wMIDMyzutwg>`__
+- `The Bitter Lesson
+  <https://www.cs.utexas.edu/~eunsol/courses/data/bitter_lesson.pdf>`_
 
 Papers I've Liked
 -----------------
