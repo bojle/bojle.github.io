@@ -67,6 +67,7 @@ Blogs
 - `Max Bernstein <https://bernsteinbear.com/blog/>`__
 - `Evan Martin <https://neugierig.org/software/blog/archive.html>`__
 - `Nirav Patel (of Framework) <https://eclecti.cc/>`__
+- `Riya Bisht <https://riyabisht.com/links/>`__
 
 Books
 -----
@@ -100,6 +101,8 @@ Books
    weekend <https://raytracing.github.io/books/RayTracingInOneWeekend.html>`__
 -  `Concise Electronics for
    Geeks <https://lcamtuf.coredump.cx/electronics/>`__
+
+
 
 Other Compilations of Books or Links
 ------------------------------------
