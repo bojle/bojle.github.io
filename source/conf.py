@@ -7,7 +7,6 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 import alabaster
-import better
 
 project = 'Thoughts, et cetera'
 copyright = '2023, Shreeyash Pandey'

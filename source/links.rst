@@ -57,6 +57,7 @@ Programming/Hacking
 - `Fast IO on Unixes by the way of 'yes' command
   <https://www.reddit.com/r/unix/comments/6gxduc/how_is_gnu_yes_so_fast/>`__
 - `Greppability is an underrated code metric <https://morizbuesing.com/blog/greppability-code-metric/>`__
+-  `Concise Electronics for Geeks <https://lcamtuf.coredump.cx/electronics/>`__
 
 Blogs
 -----
@@ -76,31 +77,9 @@ Books
    Krishnamurthy <http://cs.brown.edu/courses/cs173/2012/book/>`__
 -  `Write yourself a scheme in Haskell - Jonathan
    Tang <https://en.wikibooks.org/wiki/Write_Yourself_a_Scheme_in_48_Hours>`__
--  `Compiler design in C <https://holub.com/compiler/>`__
--  `Static Program analysis - Anders
-   moellers <https://cs.au.dk/%7Eamoeller/spa/>`__
--  `Design and Implementation of the FreeBSD Operating
-   System <https://docs.freebsd.org/en/books/design-44bsd/>`__
--  `Linux Virtual Memory Manager -
-   Gorman <https://www.kernel.org/doc/gorman/html/understand/>`__
 -  `OS: Three easy
    pieces <https://pages.cs.wisc.edu/~remzi/OSTEP/#book-chapters>`__
--  `An operating system vade mecum - Raphael
-   Finkel <https://www.alexdelis.eu/k22/VadeMecum.pdf>`__
--  `Write a small x86 OS:
-   littleosbook <https://littleosbook.github.io/>`__
--  `James malloy’s kernel
-   dev <http://www.jamesmolloy.co.uk/tutorial_html/index.html>`__
--  `Hands-on Scientific Computing - Helsinki
-   MOOC <https://handsonscicomp.readthedocs.io/en/latest/>`__
--  `Algorithms - Jeff
-   Erickson <http://jeffe.cs.illinois.edu/teaching/algorithms/>`__
--  `Introduction to Computer Architecture - Robert
-   Plantz <http://bob.cs.sonoma.edu/IntroCompOrg-RPi/>`__
--  `Raytracing in one
-   weekend <https://raytracing.github.io/books/RayTracingInOneWeekend.html>`__
--  `Concise Electronics for
-   Geeks <https://lcamtuf.coredump.cx/electronics/>`__
+- `OS Design - Xinu Approach <https://xinu.cs.purdue.edu/>`__
 
 
 
@@ -126,3 +105,4 @@ Misc
 ----
 
 -  `Simple Strength Fitness <https://ss.fitness/>`__
+- `Nearlyfreespeech hosting <https://www.nearlyfreespeech.net/>`__
