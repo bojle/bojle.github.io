@@ -4,12 +4,12 @@ No-ISA is the Best ISA
 Last Change: |today|
 
 This week, me and my colleague were present at the first `compilertech.org
-<compilertech.org>`_ workshop talking about the work we are doing at `Vicharak
-<vicharak.in>`_ involving FPGAs, Reconfigurable Computing and Compilers for such
+<https://compilertech.org/>`_ workshop talking about the work we are doing at `Vicharak
+<https://vicharak.in/>`_ involving FPGAs, Reconfigurable Computing and Compilers for such
 computers. This small blog post is a brief summary of the talk. 
 
 The slides (and the extended slides) for the presentation are available at:
-`github.com/vicharak-in/noisa <github.com/vicharak-in/noisa>`_. Video for
+`github.com/vicharak-in/noisa <https://github.com/vicharak-in/noisa>`_. Video for
 the talk will soon be available.
 
 Summary
