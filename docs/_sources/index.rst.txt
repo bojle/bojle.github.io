@@ -4,7 +4,7 @@ Shreeyash's Webpage
 "*The life so short, the craft so long to learn*" 
 — Hippocrates
 
-.. image:: _static/loom.png
+.. image:: _static/loom.webp
     :alt: Reed Power Loom
     :width: 400
     :align: center
