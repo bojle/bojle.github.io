@@ -68,7 +68,9 @@ Blogs
 - `Max Bernstein <https://bernsteinbear.com/blog/>`__
 - `Evan Martin <https://neugierig.org/software/blog/archive.html>`__
 - `Nirav Patel (of Framework) <https://eclecti.cc/>`__
+- `Krister Walfridsson (compilers, PLs, OS) <https://kristerw.github.io/>`__
 - `Riya Bisht <https://riyabisht.com/links/>`__
+
 
 Books
 -----
