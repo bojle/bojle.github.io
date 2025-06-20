@@ -28,7 +28,9 @@ Essays I've Liked
 - `The TANDBERG Way - Olve Maudal
   <https://youtu.be/34FLhwkrwoQ?si=QU1Q_wMIDMyzutwg>`__
 - `The Bitter Lesson
-  <https://www.cs.utexas.edu/~eunsol/courses/data/bitter_lesson.pdf>`_
+  <https://www.cs.utexas.edu/~eunsol/courses/data/bitter_lesson.pdf>`__
+- `The story of ispc (auto-vectorization is not a programming model)
+  <https://pharr.org/matt/blog/2018/04/30/ispc-all>`__
 
 Papers I've Liked
 -----------------
@@ -69,6 +71,7 @@ Blogs
 - `Evan Martin <https://neugierig.org/software/blog/archive.html>`__
 - `Nirav Patel (of Framework) <https://eclecti.cc/>`__
 - `Krister Walfridsson (compilers, PLs, OS) <https://kristerw.github.io/>`__
+- `Matt Pharr (compilers, gpus, rendering) <https://pharr.org/matt/blog/>`__
 - `Riya Bisht <https://riyabisht.com/links/>`__
 
 
