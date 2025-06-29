@@ -24,6 +24,6 @@ This is my place on the interwebz. Check out:
 Contact
 --------
 
-| **Email**: shreeyash [at] 16bits [dot] co [dot] in
+| **Email**: hi [at] shreeyash [dot] xyz
 | **Github**: `bojle <http://github.com/bojle>`_
 | **Twitter**: `b0jle <https://twitter.com/b0jle>`_
