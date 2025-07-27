@@ -1,0 +1,14 @@
+Impressions on the Xilinx Kria KV260
+####################################
+
+KV260 is a SoM by Xilinx that has an FPGA and a CPU on it. This is an
+interesting board especially because of the the FPGA. As a result, I was
+a little excited to explore it when I got my hands on it. The excitement
+didn't last enough though, it soon turned into frustration and later, lament
+on the state that it is in. 
+
+pain points
+
+- login to view docs
+- scattered documentation
+- awkwards flows to run inference
