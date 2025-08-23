@@ -82,6 +82,7 @@ this case, a compiler) and test for miscompilations.
 - [Riya Bisht](https://riyabisht.com/links/)
 - [Alex Bradbury (compilers, LLVM)](https://muxup.com/)
 - [Nelson Elhage (compilers, SWE)](https://blog.nelhage.com/)
+- [Nikita Popov (LLVM)](https://www.npopov.com/)
 
 ## Books
 
