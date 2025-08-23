@@ -81,6 +81,7 @@ this case, a compiler) and test for miscompilations.
   rendering)](https://pharr.org/matt/blog/)
 - [Riya Bisht](https://riyabisht.com/links/)
 - [Alex Bradbury (compilers, LLVM)](https://muxup.com/)
+- [Nelson Elhage (compilers, SWE)](https://blog.nelhage.com/)
 
 ## Books
 
