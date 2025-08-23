@@ -1,4 +1,4 @@
-title: About Me
+Title: About Me
 
 ## About Me
 
