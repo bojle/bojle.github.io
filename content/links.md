@@ -85,6 +85,7 @@ this case, a compiler) and test for miscompilations.
 - [Nikita Popov (LLVM)](https://www.npopov.com/)
 - [Ramkumar Ramachandra (Compilers, Formal Methods)](https://artagnon.com/)
 - [Fangrui Song (compilers, LLVM)](https://maskray.me/)
+- [Min-Yih Hsu (compilers, LLVM)](https://myhsu.xyz/blog/)
 
 ## Books
 
