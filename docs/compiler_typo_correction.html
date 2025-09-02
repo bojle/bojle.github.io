@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="Shreeyash Pandey">
+    <meta name="description" content="Shreeyash's Blog">
+    <link rel="alternate" href="/atom.xml" type="application/atom+xml">
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <title>Typo Correction | Shreeyash's Blog</title>
+  </head>
+
+  <body>
+    <header>
+      <h1><a href="/">Thoughts, et cetera.</a></h1>
+      <nav>
+        <h2>Shreeyash's Blog</h2>
+        <ul>
+          <li><h2><a href="/">Blog</a></h2></li>
+          <li><h2><a href="/archive.html">Archive</a></h2></li>
+          <li><h2><a href="/tags/">Tags</a></h2></li>
+          <li><h2><a href="/links.html">Links</a></h2></li>
+          <li><h2><a href="/about.html">About Me</a></h2></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+    
+
+  
+  <h2>Typo Correction</h2>
+  
+
+  <aside>
+    <p>published on 2024-12-31
+
+    
+    · tagged with
+      
+        <a href="/tags/compilers.html">#compilers</a> and 
+        <a href="/tags/llvm.html">#llvm</a>
+    
+    </p>
+  </aside>
+
+  <h1>Typo Correction</h1>
+<p>Clumsy hands cause typos. If you&rsquo;re in the business of writing code, 
+you might have noticed that your compiler is capable of identifying
+and suggesting fixes for the typos you write.</p>
+<p>For example, take the following code:</p>
+<div class="codehilite"><pre><span></span><code>int foo(int x, int y) {
+  int pacman = x * y;
+  return pamcan;
+}
+</code></pre></div>
+
+<p>generates an error identifying that <code>pamcan</code> is an undeclared identifier
+and a valid identifier by the name <code>pacman</code> is available, &ldquo;perhaps that 
+is what you meant&rdquo;.</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>clang<span class="w"> </span>-c<span class="w"> </span>a.c<span class="w"> </span>-o<span class="w"> </span>a.o
+a.c:3:10:<span class="w"> </span>error:<span class="w"> </span>use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier<span class="w"> </span><span class="s1">&#39;pamcan&#39;</span><span class="p">;</span><span class="w"> </span>did<span class="w"> </span>you<span class="w"> </span>mean<span class="w"> </span><span class="s1">&#39;pacman&#39;</span>?
+<span class="w">    </span><span class="m">3</span><span class="w"> </span><span class="p">|</span><span class="w">   </span><span class="k">return</span><span class="w"> </span>pamcan<span class="p">;</span>
+<span class="w">      </span><span class="p">|</span><span class="w">          </span>^~~~~~
+<span class="w">      </span><span class="p">|</span><span class="w">          </span>pacman
+a.c:2:7:<span class="w"> </span>note:<span class="w"> </span><span class="s1">&#39;pacman&#39;</span><span class="w"> </span>declared<span class="w"> </span>here
+<span class="w">    </span><span class="m">2</span><span class="w"> </span><span class="p">|</span><span class="w">   </span>int<span class="w"> </span><span class="nv">pacman</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>x<span class="w"> </span>*<span class="w"> </span>y<span class="p">;</span>
+<span class="w">      </span><span class="p">|</span><span class="w">       </span>^
+<span class="m">1</span><span class="w"> </span>error<span class="w"> </span>generated.
+</code></pre></div>
+
+<p>This article explains how the compiler (clang, to be specific) does it.</p>
+<h2>Parsing and Semantic Analysis</h2>
+<p>The quickest tool at our disposal is <code>grep</code>. So we grep for the phrase &lsquo;use of
+undecalared identifier&rsquo;:</p>
+<p>// TODO: add a footnote on ripgrep</p>
+<div class="codehilite"><pre><span></span><code>~/dev/llvm-project/clang<span class="w"> </span>$<span class="w"> </span>rg<span class="w"> </span>&quot;use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier&quot;<span class="w"> </span>-g<span class="w"> </span>&#39;!*test*&#39;
+docs/InternalsManual.rst
+3411:<span class="w">  </span>int<span class="w"> </span>A<span class="w"> </span>=<span class="w"> </span>B;<span class="w"> </span>//<span class="w"> </span>expected-error<span class="w"> </span><span class="cp">{{</span><span class="nv">use</span> <span class="nv">of</span> <span class="nv">undeclared</span> <span class="nv">identifier</span> <span class="s1">&#39;B&#39;</span><span class="cp">}}</span>
+3431:<span class="w">  </span>int<span class="w"> </span>A<span class="w"> </span>=<span class="w"> </span>B;<span class="w"> </span>//<span class="w"> </span>foo-error<span class="w"> </span><span class="cp">{{</span><span class="nv">use</span> <span class="nv">of</span> <span class="nv">undeclared</span> <span class="nv">identifier</span> <span class="s1">&#39;B&#39;</span><span class="cp">}}</span>
+3432:<span class="w">  </span>int<span class="w"> </span>C<span class="w"> </span>=<span class="w"> </span>D;<span class="w"> </span>//<span class="w"> </span>bar-error<span class="w"> </span><span class="cp">{{</span><span class="nv">use</span> <span class="nv">of</span> <span class="nv">undeclared</span> <span class="nv">identifier</span> <span class="s1">&#39;D&#39;</span><span class="cp">}}</span>
+3433:<span class="w">  </span>int<span class="w"> </span>E<span class="w"> </span>=<span class="w"> </span>F;<span class="w"> </span>//<span class="w"> </span>expected-error<span class="w"> </span><span class="cp">{{</span><span class="nv">use</span> <span class="nv">of</span> <span class="nv">undeclared</span> <span class="nv">identifier</span> <span class="s1">&#39;F&#39;</span><span class="cp">}}</span>
+3463:<span class="w">  </span>int<span class="w"> </span>A<span class="w"> </span>=<span class="w"> </span>B;<span class="w"> </span>//<span class="w"> </span>expected-error<span class="w"> </span><span class="cp">{{</span><span class="nv">use</span> <span class="nv">of</span> <span class="nv">undeclared</span> <span class="nv">identifier</span> <span class="s1">&#39;B&#39;</span><span class="cp">}}</span>
+
+www/compatibility.html
+581:<span class="nt">&lt;b&gt;</span>my_file.cpp:8:5:<span class="w"> </span><span class="nt">&lt;span</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;error&quot;</span><span class="nt">&gt;</span>error:<span class="nt">&lt;/span&gt;</span><span class="w"> </span>use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier<span class="w"> </span>&#39;DoThis&#39;<span class="nt">&lt;/b&gt;</span>
+588:<span class="nt">&lt;b&gt;</span>my_file.cpp:9:5:<span class="w"> </span><span class="nt">&lt;span</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;error&quot;</span><span class="nt">&gt;</span>error:<span class="nt">&lt;/span&gt;</span><span class="w"> </span>use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier<span class="w"> </span>&#39;DoThat&#39;<span class="nt">&lt;/b&gt;</span>
+
+docs/ClangRepl.rst
+224:<span class="w">   </span>input_line_2:1:1:<span class="w"> </span>error:<span class="w"> </span>use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier<span class="w"> </span>&#39;a&#39;
+
+docs/UsersManual.rst
+4167:<span class="w">     </span>error:<span class="w"> </span>use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier<span class="w"> </span>&#39;get_enqueued_local_size&#39;
+4168:<span class="w">     </span>error:<span class="w"> </span>use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier<span class="w"> </span>&#39;get_local_size&#39;
+
+include/clang/Basic/DiagnosticSemaKinds.td
+6099:def<span class="w"> </span>err_undeclared_var_use<span class="w"> </span>:<span class="w"> </span>Error<span class="err">&lt;</span>&quot;use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier<span class="w"> </span>%0&quot;&gt;;
+6101:<span class="w">  </span>&quot;use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier<span class="w"> </span>%0;<span class="w"> </span>&quot;
+11273:<span class="w">  </span>&quot;use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier<span class="w"> </span>%0;<span class="w"> </span>did<span class="w"> </span>you<span class="w"> </span>mean<span class="w"> </span>%1?&quot;&gt;;
+</code></pre></div>
+
+<p>There&rsquo;s a hit in the last match which seems a part of the codebase. There are
+three matches in a file called &lsquo;DiagnosticSemaKinds.td&rsquo;. </p>
+<p><em>td</em> file in LLVM are meant for the
+<a href="https://llvm.org/docs/TableGen/"><em>TableGen</em></a> utility. During the build
+process, all <em>td</em> files are <em>compiled</em> into cpp source and header files.
+TableGen is an abstraction used to simplyfy maintenanance of 
+<em>information</em> files, not the actual source code machinery. For example, 
+a list of all instructions and addressing modes of each instruction supported
+by a target (processor in common language) will be written in TableGen.</p>
+
+
+    </main>
+
+    <footer>
+      <p>This website was built with <a href="https://github.com/venthur/blag">blag</a>.
+      <br>
+      Subscribe to the <a href="/atom.xml">atom feed</a>.
+      <br>
+      © 2025, Shreeyash Pandey 
+      </p>
+    </footer>
+  </body>
+
+</html>

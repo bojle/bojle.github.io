@@ -1,5 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Thoughts, et cetera.</title><link href="https://fp32.org/" rel="alternate"/><link href="https://fp32.org/atom.xml" rel="self"/><id>https://fp32.org/</id><updated>2024-12-22T00:00:00+05:30</updated><subtitle>Shreeyash's Blog</subtitle><entry><title>Why Even Bother With FPGAs?</title><link href="https://fp32.org/why_even_bother_with_fpgas.html" rel="alternate"/><published>2024-12-22T00:00:00+05:30</published><updated>2024-12-22T00:00:00+05:30</updated><author><name>Shreeyash Pandey</name></author><id>tag:fp32.org,2024-12-22:/why_even_bother_with_fpgas.html</id><summary type="html">Why Even Bother With FPGAs?</summary><content type="html">&lt;h1&gt;Why Even Bother With FPGAs?&lt;/h1&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Thoughts, et cetera.</title><link href="https://fp32.org/" rel="alternate"/><link href="https://fp32.org/atom.xml" rel="self"/><id>https://fp32.org/</id><updated>2024-12-31T00:00:00+05:30</updated><subtitle>Shreeyash's Blog</subtitle><entry><title>Typo Correction</title><link href="https://fp32.org/compiler_typo_correction.html" rel="alternate"/><published>2024-12-31T00:00:00+05:30</published><updated>2024-12-31T00:00:00+05:30</updated><author><name>Shreeyash Pandey</name></author><id>tag:fp32.org,2024-12-31:/compiler_typo_correction.html</id><summary type="html">Typo Correction</summary><content type="html">&lt;h1&gt;Typo Correction&lt;/h1&gt;
+&lt;p&gt;Clumsy hands cause typos. If you&amp;rsquo;re in the business of writing code, 
+you might have noticed that your compiler is capable of identifying
+and suggesting fixes for the typos you write.&lt;/p&gt;
+&lt;p&gt;For example, take the following code:&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;int foo(int x, int y) {
+  int pacman = x * y;
+  return pamcan;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;generates an error identifying that &lt;code&gt;pamcan&lt;/code&gt; is an undeclared identifier
+and a valid identifier by the name &lt;code&gt;pacman&lt;/code&gt; is available, &amp;ldquo;perhaps that 
+is what you meant&amp;rdquo;.&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;$&lt;span class="w"&gt; &lt;/span&gt;clang&lt;span class="w"&gt; &lt;/span&gt;-c&lt;span class="w"&gt; &lt;/span&gt;a.c&lt;span class="w"&gt; &lt;/span&gt;-o&lt;span class="w"&gt; &lt;/span&gt;a.o
+a.c:3:10:&lt;span class="w"&gt; &lt;/span&gt;error:&lt;span class="w"&gt; &lt;/span&gt;use&lt;span class="w"&gt; &lt;/span&gt;of&lt;span class="w"&gt; &lt;/span&gt;undeclared&lt;span class="w"&gt; &lt;/span&gt;identifier&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;pamcan&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;did&lt;span class="w"&gt; &lt;/span&gt;you&lt;span class="w"&gt; &lt;/span&gt;mean&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;pacman&amp;#39;&lt;/span&gt;?
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="m"&gt;3&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;pamcan&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="w"&gt;      &lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;&lt;span class="w"&gt;          &lt;/span&gt;^~~~~~
+&lt;span class="w"&gt;      &lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;&lt;span class="w"&gt;          &lt;/span&gt;pacman
+a.c:2:7:&lt;span class="w"&gt; &lt;/span&gt;note:&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;pacman&amp;#39;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;declared&lt;span class="w"&gt; &lt;/span&gt;here
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="m"&gt;2&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;&lt;span class="w"&gt;   &lt;/span&gt;int&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nv"&gt;pacman&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;x&lt;span class="w"&gt; &lt;/span&gt;*&lt;span class="w"&gt; &lt;/span&gt;y&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="w"&gt;      &lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;&lt;span class="w"&gt;       &lt;/span&gt;^
+&lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;error&lt;span class="w"&gt; &lt;/span&gt;generated.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;This article explains how the compiler (clang, to be specific) does it.&lt;/p&gt;
+&lt;h2&gt;Parsing and Semantic Analysis&lt;/h2&gt;
+&lt;p&gt;The quickest tool at our disposal is &lt;code&gt;grep&lt;/code&gt;. So we grep for the phrase &amp;lsquo;use of
+undecalared identifier&amp;rsquo;:&lt;/p&gt;
+&lt;p&gt;// TODO: add a footnote on ripgrep&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;~/dev/llvm-project/clang&lt;span class="w"&gt; &lt;/span&gt;$&lt;span class="w"&gt; &lt;/span&gt;rg&lt;span class="w"&gt; &lt;/span&gt;&amp;quot;use&lt;span class="w"&gt; &lt;/span&gt;of&lt;span class="w"&gt; &lt;/span&gt;undeclared&lt;span class="w"&gt; &lt;/span&gt;identifier&amp;quot;&lt;span class="w"&gt; &lt;/span&gt;-g&lt;span class="w"&gt; &lt;/span&gt;&amp;#39;!*test*&amp;#39;
+docs/InternalsManual.rst
+3411:&lt;span class="w"&gt;  &lt;/span&gt;int&lt;span class="w"&gt; &lt;/span&gt;A&lt;span class="w"&gt; &lt;/span&gt;=&lt;span class="w"&gt; &lt;/span&gt;B;&lt;span class="w"&gt; &lt;/span&gt;//&lt;span class="w"&gt; &lt;/span&gt;expected-error&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="cp"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;use&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;undeclared&lt;/span&gt; &lt;span class="nv"&gt;identifier&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;B&amp;#39;&lt;/span&gt;&lt;span class="cp"&gt;}}&lt;/span&gt;
+3431:&lt;span class="w"&gt;  &lt;/span&gt;int&lt;span class="w"&gt; &lt;/span&gt;A&lt;span class="w"&gt; &lt;/span&gt;=&lt;span class="w"&gt; &lt;/span&gt;B;&lt;span class="w"&gt; &lt;/span&gt;//&lt;span class="w"&gt; &lt;/span&gt;foo-error&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="cp"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;use&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;undeclared&lt;/span&gt; &lt;span class="nv"&gt;identifier&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;B&amp;#39;&lt;/span&gt;&lt;span class="cp"&gt;}}&lt;/span&gt;
+3432:&lt;span class="w"&gt;  &lt;/span&gt;int&lt;span class="w"&gt; &lt;/span&gt;C&lt;span class="w"&gt; &lt;/span&gt;=&lt;span class="w"&gt; &lt;/span&gt;D;&lt;span class="w"&gt; &lt;/span&gt;//&lt;span class="w"&gt; &lt;/span&gt;bar-error&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="cp"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;use&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;undeclared&lt;/span&gt; &lt;span class="nv"&gt;identifier&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;D&amp;#39;&lt;/span&gt;&lt;span class="cp"&gt;}}&lt;/span&gt;
+3433:&lt;span class="w"&gt;  &lt;/span&gt;int&lt;span class="w"&gt; &lt;/span&gt;E&lt;span class="w"&gt; &lt;/span&gt;=&lt;span class="w"&gt; &lt;/span&gt;F;&lt;span class="w"&gt; &lt;/span&gt;//&lt;span class="w"&gt; &lt;/span&gt;expected-error&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="cp"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;use&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;undeclared&lt;/span&gt; &lt;span class="nv"&gt;identifier&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;F&amp;#39;&lt;/span&gt;&lt;span class="cp"&gt;}}&lt;/span&gt;
+3463:&lt;span class="w"&gt;  &lt;/span&gt;int&lt;span class="w"&gt; &lt;/span&gt;A&lt;span class="w"&gt; &lt;/span&gt;=&lt;span class="w"&gt; &lt;/span&gt;B;&lt;span class="w"&gt; &lt;/span&gt;//&lt;span class="w"&gt; &lt;/span&gt;expected-error&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="cp"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;use&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;undeclared&lt;/span&gt; &lt;span class="nv"&gt;identifier&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;B&amp;#39;&lt;/span&gt;&lt;span class="cp"&gt;}}&lt;/span&gt;
+
+www/compatibility.html
+581:&lt;span class="nt"&gt;&amp;lt;b&amp;gt;&lt;/span&gt;my_file.cpp:8:5:&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;span&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="na"&gt;class=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;error&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;error:&lt;span class="nt"&gt;&amp;lt;/span&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;use&lt;span class="w"&gt; &lt;/span&gt;of&lt;span class="w"&gt; &lt;/span&gt;undeclared&lt;span class="w"&gt; &lt;/span&gt;identifier&lt;span class="w"&gt; &lt;/span&gt;&amp;#39;DoThis&amp;#39;&lt;span class="nt"&gt;&amp;lt;/b&amp;gt;&lt;/span&gt;
+588:&lt;span class="nt"&gt;&amp;lt;b&amp;gt;&lt;/span&gt;my_file.cpp:9:5:&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;span&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="na"&gt;class=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;error&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;error:&lt;span class="nt"&gt;&amp;lt;/span&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;use&lt;span class="w"&gt; &lt;/span&gt;of&lt;span class="w"&gt; &lt;/span&gt;undeclared&lt;span class="w"&gt; &lt;/span&gt;identifier&lt;span class="w"&gt; &lt;/span&gt;&amp;#39;DoThat&amp;#39;&lt;span class="nt"&gt;&amp;lt;/b&amp;gt;&lt;/span&gt;
+
+docs/ClangRepl.rst
+224:&lt;span class="w"&gt;   &lt;/span&gt;input_line_2:1:1:&lt;span class="w"&gt; &lt;/span&gt;error:&lt;span class="w"&gt; &lt;/span&gt;use&lt;span class="w"&gt; &lt;/span&gt;of&lt;span class="w"&gt; &lt;/span&gt;undeclared&lt;span class="w"&gt; &lt;/span&gt;identifier&lt;span class="w"&gt; &lt;/span&gt;&amp;#39;a&amp;#39;
+
+docs/UsersManual.rst
+4167:&lt;span class="w"&gt;     &lt;/span&gt;error:&lt;span class="w"&gt; &lt;/span&gt;use&lt;span class="w"&gt; &lt;/span&gt;of&lt;span class="w"&gt; &lt;/span&gt;undeclared&lt;span class="w"&gt; &lt;/span&gt;identifier&lt;span class="w"&gt; &lt;/span&gt;&amp;#39;get_enqueued_local_size&amp;#39;
+4168:&lt;span class="w"&gt;     &lt;/span&gt;error:&lt;span class="w"&gt; &lt;/span&gt;use&lt;span class="w"&gt; &lt;/span&gt;of&lt;span class="w"&gt; &lt;/span&gt;undeclared&lt;span class="w"&gt; &lt;/span&gt;identifier&lt;span class="w"&gt; &lt;/span&gt;&amp;#39;get_local_size&amp;#39;
+
+include/clang/Basic/DiagnosticSemaKinds.td
+6099:def&lt;span class="w"&gt; &lt;/span&gt;err_undeclared_var_use&lt;span class="w"&gt; &lt;/span&gt;:&lt;span class="w"&gt; &lt;/span&gt;Error&lt;span class="err"&gt;&amp;lt;&lt;/span&gt;&amp;quot;use&lt;span class="w"&gt; &lt;/span&gt;of&lt;span class="w"&gt; &lt;/span&gt;undeclared&lt;span class="w"&gt; &lt;/span&gt;identifier&lt;span class="w"&gt; &lt;/span&gt;%0&amp;quot;&amp;gt;;
+6101:&lt;span class="w"&gt;  &lt;/span&gt;&amp;quot;use&lt;span class="w"&gt; &lt;/span&gt;of&lt;span class="w"&gt; &lt;/span&gt;undeclared&lt;span class="w"&gt; &lt;/span&gt;identifier&lt;span class="w"&gt; &lt;/span&gt;%0;&lt;span class="w"&gt; &lt;/span&gt;&amp;quot;
+11273:&lt;span class="w"&gt;  &lt;/span&gt;&amp;quot;use&lt;span class="w"&gt; &lt;/span&gt;of&lt;span class="w"&gt; &lt;/span&gt;undeclared&lt;span class="w"&gt; &lt;/span&gt;identifier&lt;span class="w"&gt; &lt;/span&gt;%0;&lt;span class="w"&gt; &lt;/span&gt;did&lt;span class="w"&gt; &lt;/span&gt;you&lt;span class="w"&gt; &lt;/span&gt;mean&lt;span class="w"&gt; &lt;/span&gt;%1?&amp;quot;&amp;gt;;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;There&amp;rsquo;s a hit in the last match which seems a part of the codebase. There are
+three matches in a file called &amp;lsquo;DiagnosticSemaKinds.td&amp;rsquo;. &lt;/p&gt;
+&lt;p&gt;&lt;em&gt;td&lt;/em&gt; file in LLVM are meant for the
+&lt;a href="https://llvm.org/docs/TableGen/"&gt;&lt;em&gt;TableGen&lt;/em&gt;&lt;/a&gt; utility. During the build
+process, all &lt;em&gt;td&lt;/em&gt; files are &lt;em&gt;compiled&lt;/em&gt; into cpp source and header files.
+TableGen is an abstraction used to simplyfy maintenanance of 
+&lt;em&gt;information&lt;/em&gt; files, not the actual source code machinery. For example, 
+a list of all instructions and addressing modes of each instruction supported
+by a target (processor in common language) will be written in TableGen.&lt;/p&gt;</content></entry><entry><title>Why Even Bother With FPGAs?</title><link href="https://fp32.org/why_even_bother_with_fpgas.html" rel="alternate"/><published>2024-12-22T00:00:00+05:30</published><updated>2024-12-22T00:00:00+05:30</updated><author><name>Shreeyash Pandey</name></author><id>tag:fp32.org,2024-12-22:/why_even_bother_with_fpgas.html</id><summary type="html">Why Even Bother With FPGAs?</summary><content type="html">&lt;h1&gt;Why Even Bother With FPGAs?&lt;/h1&gt;
 &lt;p&gt;FPGAs being alternative processors enjoy a fair bit of skepticism,
 especially from people higher up in the pyramid of computer abstractions
 (Software Engineers and the like). This post is my attempt at trying to
