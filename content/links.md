@@ -46,6 +46,15 @@ on the dead code should cause no variance to the outputs for the inputs.
 This technique \"EMI\" allows one to have many versions of a program (in
 this case, a compiler) and test for miscompilations.
 
+- [Beyond the Phase Ordering Problem: Finding the Globally
+Optimal Code w.r.t. Optimization Phases](https://arxiv.org/pdf/2410.03120)
+
+Makes a case that solving the phase ordering problem of compiler passes
+is not the ultimate solution for generating optimal code. For example, 
+a compiler will never convert bubble sort into quick sort, no matter
+the order in which optimization passes are run because it lacks a semantic
+understand of the problem. Urges a "global" view of the optimization problem.
+
 ## Programming/Hacking
 
 - [Hacker How To - Eric
