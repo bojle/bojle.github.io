@@ -95,7 +95,8 @@ understand of the problem. Urges a "global" view of the optimization problem.
 - [Ramkumar Ramachandra (Compilers, Formal Methods)](https://artagnon.com/)
 - [Fangrui Song (compilers, LLVM)](https://maskray.me/)
 - [Min-Yih Hsu (compilers, LLVM)](https://myhsu.xyz/blog/)
-- [Keith Tsui (compilers, LLVM)](https://juejin.cn/user/4432851098679431/posts)
+- [Keith Tsui (compilers, LLVM)](https://juejin.cn/user/4432851098679431/posts)a
+- [Fabien Sanglard (graphics, computers)](https://fabiensanglard.net/)
 
 ## Books
 

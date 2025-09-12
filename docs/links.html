@@ -74,6 +74,15 @@ executed and unexecuted code ("dead code"). Re-ordering/manipulation
 on the dead code should cause no variance to the outputs for the inputs.
 This technique "EMI" allows one to have many versions of a program (in
 this case, a compiler) and test for miscompilations.</p>
+<ul>
+<li><a href="https://arxiv.org/pdf/2410.03120">Beyond the Phase Ordering Problem: Finding the Globally
+Optimal Code w.r.t. Optimization Phases</a></li>
+</ul>
+<p>Makes a case that solving the phase ordering problem of compiler passes
+is not the ultimate solution for generating optimal code. For example, 
+a compiler will never convert bubble sort into quick sort, no matter
+the order in which optimization passes are run because it lacks a semantic
+understand of the problem. Urges a &ldquo;global&rdquo; view of the optimization problem.</p>
 <h2>Programming/Hacking</h2>
 <ul>
 <li><a href="http://www.catb.org/~esr/faqs/hacker-howto.html">Hacker How To - Eric
@@ -114,7 +123,8 @@ this case, a compiler) and test for miscompilations.</p>
 <li><a href="https://artagnon.com/">Ramkumar Ramachandra (Compilers, Formal Methods)</a></li>
 <li><a href="https://maskray.me/">Fangrui Song (compilers, LLVM)</a></li>
 <li><a href="https://myhsu.xyz/blog/">Min-Yih Hsu (compilers, LLVM)</a></li>
-<li><a href="https://juejin.cn/user/4432851098679431/posts">Keith Tsui (compilers, LLVM)</a></li>
+<li><a href="https://juejin.cn/user/4432851098679431/posts">Keith Tsui (compilers, LLVM)</a>a</li>
+<li><a href="https://fabiensanglard.net/">Fabien Sanglard (graphics, computers)</a></li>
 </ul>
 <h2>Books</h2>
 <ul>
