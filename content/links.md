@@ -33,6 +33,8 @@ Title: Links
   Lesson](https://www.cs.utexas.edu/~eunsol/courses/data/bitter_lesson.pdf)
 - [The story of ispc (auto-vectorization is not a programming
   model)](https://pharr.org/matt/blog/2018/04/30/ispc-all)
+- [On being a Senior
+  Engineer](https://www.kitchensoap.com/2012/10/25/on-being-a-senior-engineer/)
 
 ## Papers I\'ve Liked
 
