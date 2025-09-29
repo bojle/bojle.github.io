@@ -36,6 +36,12 @@ Title: Links
 - [On being a Senior
   Engineer](https://www.kitchensoap.com/2012/10/25/on-being-a-senior-engineer/)
 
+## Travel Essays
+
+- [Greenland is a beautiful
+  nightmare](https://matduggan.com/greenland-is-a-beautiful-nightmare/)
+- [Democratic Republic of Congo: Lubumbashi to Kinshasa](https://geoff.greer.fm/congo/)
+
 ## Papers I\'ve Liked
 
 - [Compiler Validation via Equivalence Modulo
