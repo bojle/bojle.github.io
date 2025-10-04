@@ -4,5 +4,5 @@
 
 ![](punter.jpeg)
 
-![](punter-side.jpeg)
+![](punter-side.png)
 
