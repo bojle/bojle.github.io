@@ -4,6 +4,9 @@ Title: Links
 
 ## Essays I\'ve Liked
 
+- [The Atomic Bomb Considered As Hungarian High School Science Fair Project -
+  Scott
+Alexander](https://slatestarcodex.com/2017/05/26/the-atomic-bomb-considered-as-hungarian-high-school-science-fair-project/)
 - [A Mathematician\'s Apology - G.H. Hardy
   \[PDF\]](https://web.njit.edu/~akansu/PAPERS/GHHardy-AMathematiciansApology.pdf)
 - [All I really need to know - David

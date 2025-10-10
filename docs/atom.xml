@@ -1,5 +1,176 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Thoughts, et cetera.</title><link href="https://fp32.org/" rel="alternate"/><link href="https://fp32.org/atom.xml" rel="self"/><id>https://fp32.org/</id><updated>2025-09-07T00:00:00+05:30</updated><subtitle>Shreeyash's Blog</subtitle><entry><title>Typo Correction in LLVM</title><link href="https://fp32.org/compiler_typo_correction.html" rel="alternate"/><published>2025-09-07T00:00:00+05:30</published><updated>2025-09-07T00:00:00+05:30</updated><author><name>Shreeyash Pandey</name></author><id>tag:fp32.org,2025-09-07:/compiler_typo_correction.html</id><summary type="html">Typo Correction in LLVM</summary><content type="html">&lt;p&gt;If you&amp;rsquo;re in the business of writing code, you might have noticed that your
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Thoughts, et cetera.</title><link href="https://fp32.org/" rel="alternate"/><link href="https://fp32.org/atom.xml" rel="self"/><id>https://fp32.org/</id><updated>2025-10-04T00:00:00+05:30</updated><subtitle>Shreeyash's Blog</subtitle><entry><title>Faster Division With Newton-Raphson Approximation</title><link href="https://fp32.org/newton_raphson_division.html" rel="alternate"/><published>2025-10-04T00:00:00+05:30</published><updated>2025-10-04T00:00:00+05:30</updated><author><name>Shreeyash Pandey</name></author><id>tag:fp32.org,2025-10-04:/newton_raphson_division.html</id><summary type="html">Faster Division With Newton-Raphson Approximation</summary><content type="html">&lt;p&gt;Many devices, especially embedded devices (micro-controllers and the like) do
+not come with an &lt;a href="https://en.wikipedia.org/wiki/Floating-point_unit"&gt;FPU&lt;/a&gt; and
+circuitry required for carrying out integer division. In such a case, one looks
+towards methods of approximating the results of division and storing them in
+&lt;a href="https://en.wikipedia.org/wiki/Fixed-point_arithmetic"&gt;Fixed Point&lt;/a&gt; format.&lt;/p&gt;
+&lt;p&gt;C has standardized support for such an instance via its stdfix library. The &lt;a href="https://standards.iso.org/ittf/PubliclyAvailableStandards/c051126_ISO_IEC_TR_18037_2008.zip"&gt;ISO
+Document&lt;/a&gt;
+describes the data types and functions available in &lt;code&gt;stdfix.h&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;This post describes the theory, provides a dependency-free C++ implementation of
+the core algorithm and discusses optimizations to speed it up even further. In
+that order.&lt;/p&gt;
+&lt;h2&gt;Theory&lt;/h2&gt;
+&lt;p&gt;The problem at hand is that of division:&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;C = N/D
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;The first step to solving this is to split the problem in two: Reciprocal
+calculation, followed by multiplication. This is what it looks like:&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;C = N * (1/D)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;It is assumed that the device has a fast multiplication hardware (which is
+mostly the case). Thus, multiplication can be carried out by the good old &lt;code&gt;mul&lt;/code&gt;
+instruction. Now for the most tricky part - calculating the reciprocal - which
+is a division operation!&lt;/p&gt;
+&lt;p&gt;As it turns out, this is a well known problem, so we have the solutions! &lt;/p&gt;
+&lt;h3&gt;Newton-Raphson Method&lt;/h3&gt;
+&lt;p&gt;The &lt;a href="https://en.wikipedia.org/wiki/Division_algorithm#Newton%E2%80%93Raphson_division"&gt;Wikipedia
+article&lt;/a&gt;
+suffiecienty describes what and how of NR Method. I&amp;rsquo;ll summarize and add some
+missing context to make it digestable. &lt;/p&gt;
+&lt;p&gt;&amp;ldquo;&lt;a href="https://en.wikipedia.org/wiki/Newton%27s_method"&gt;Newton&amp;rsquo;s Method&lt;/a&gt; is a
+root-finding algorithm which produces successively better approximations to the
+roots (or zeroes) of a real-valued function.&amp;rdquo; &lt;/p&gt;
+&lt;h3 align="center"&gt;
+&lt;math xmlns="http://www.w3.org/1998/Math/MathML"&gt;&lt;msub&gt;&lt;mi&gt;x&lt;/mi&gt;&lt;mrow&gt;&lt;mn&gt;1&lt;/mn&gt;&lt;mo&gt;&amp;#xA0;&lt;/mo&gt;&lt;/mrow&gt;&lt;/msub&gt;&lt;mo&gt;=&lt;/mo&gt;&lt;mo&gt;&amp;#xA0;&lt;/mo&gt;&lt;msub&gt;&lt;mi&gt;x&lt;/mi&gt;&lt;mrow&gt;&lt;mn&gt;0&lt;/mn&gt;&lt;mo&gt;&amp;#xA0;&lt;/mo&gt;&lt;/mrow&gt;&lt;/msub&gt;&lt;mo&gt;-&lt;/mo&gt;&lt;mo&gt;&amp;#xA0;&lt;/mo&gt;&lt;mfrac&gt;&lt;mrow&gt;&lt;mi&gt;f&lt;/mi&gt;&lt;mo&gt;(&lt;/mo&gt;&lt;msub&gt;&lt;mi&gt;x&lt;/mi&gt;&lt;mn&gt;0&lt;/mn&gt;&lt;/msub&gt;&lt;mo&gt;)&lt;/mo&gt;&lt;/mrow&gt;&lt;mrow&gt;&lt;mi&gt;f&lt;/mi&gt;&lt;mo&gt;'&lt;/mo&gt;&lt;mo&gt;(&lt;/mo&gt;&lt;msub&gt;&lt;mi&gt;x&lt;/mi&gt;&lt;mn&gt;0&lt;/mn&gt;&lt;/msub&gt;&lt;mo&gt;)&lt;/mo&gt;&lt;/mrow&gt;&lt;/mfrac&gt;&lt;mo&gt;&amp;#xA0;&lt;/mo&gt;&lt;mo&gt;&amp;#xA0;&lt;/mo&gt;&lt;/math&gt;
+&lt;/h3&gt;
+
+&lt;p&gt;The idea is to convert &lt;code&gt;1/D&lt;/code&gt; into an equation, plug it into the above equation
+and find the roots that allow us to successively approximate. &lt;/p&gt;
+&lt;h2&gt;Implementation&lt;/h2&gt;
+&lt;p&gt;To demonstrate the basic algorithm, we must first abstract the fixed-point types (XType, long accum) into a standalone class. We will use a Q1.15 format (1 sign/int bit, 15 fraction bits) for our example.&lt;/p&gt;
+&lt;p&gt;Minimal Fixed-Point Implementation (Q1.15)&lt;/p&gt;
+&lt;p&gt;The FixedPoint class will simulate the necessary fixed-point operations.&lt;/p&gt;
+&lt;p&gt;// Fixed-Point Type: Q1.15 (1 sign/int bit, 15 fraction bits)
+// TotalBits = 16, FractionLength (F) = 15
+using FixedPointType = int16_t;&lt;/p&gt;
+&lt;p&gt;class FixedPoint {
+private:
+FixedPointType value;
+static constexpr int F = 15;
+static constexpr int MAX_VAL = (1 \&amp;lt;\&amp;lt; (F - 1)) - 1; // 32767
+static constexpr int MIN_VAL = -(1 \&amp;lt;\&amp;lt; (F - 1)); // -32768&lt;/p&gt;
+&lt;p&gt;public:
+FixedPoint(FixedPointType v) : value(v) {}
+FixedPointType get_value() const { return value; }
+static FixedPoint MAX() { return FixedPoint(MAX_VAL); }
+static FixedPoint MIN() { return FixedPoint(MIN_VAL); }
+static FixedPoint ONE() { return FixedPoint(1 \&amp;lt;\&amp;lt; F); } // 32768, often saturates to MAX&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Simplistic&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;multiplication&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;for&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;demonstration&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;will&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;overflow&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;truncate&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;FixedPoint&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;operator&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;const&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;FixedPoint&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;other&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;const&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Use&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;32&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;bit&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;intermediate&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;for&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;multiplication&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;A&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;B&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="o"&gt;^&lt;/span&gt;&lt;span class="n"&gt;F&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="n"&gt;int32_t&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;result&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;static_cast&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;int32_t&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;other&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;F&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;FixedPoint&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;static_cast&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;FixedPointType&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;result&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Simplistic&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;subtraction&lt;/span&gt;
+&lt;span class="n"&gt;FixedPoint&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;operator&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;const&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;FixedPoint&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;other&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;const&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;FixedPoint&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;other&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;};&lt;/p&gt;
+&lt;p&gt;// Helper for initial reciprocal approximation (x0 = 2.8235 - 1.8823 * d)
+// Coefficients are Q1.15 fixed-point representations of 48/17 and 32/17.
+// d_scaled is the denominator normalized to [0.5, 1.0]
+FixedPoint initial_approx(FixedPoint d_scaled) {
+// 48/17 * 2^15 = 92523 (approx) -&amp;gt; 0x16A6B
+FixedPoint a(0x16A6B);
+// 32/17 * 2^15 = 61682 (approx) -&amp;gt; 0xF0F2
+FixedPoint b(0x0F0F2);&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;FixedPoint b_times_d = b * d_scaled;
+return a - b_times_d;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;}&lt;/p&gt;
+&lt;p&gt;// Newton-Raphson iteration step: X_i+1 = X_i * (2 - D * X_i)
+FixedPoint nrstep(FixedPoint d_scaled, FixedPoint x_i) {
+// D * X_i
+FixedPoint d_times_x = d_scaled * x_i;&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="c1"&gt;// 2 (2 * 2^15)&lt;/span&gt;
+&lt;span class="n"&gt;FixedPoint&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;two&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="n"&gt;x20000&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;
+
+&lt;span class="c1"&gt;// (2 - D * X_i)&lt;/span&gt;
+&lt;span class="n"&gt;FixedPoint&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;correction&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;two&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;d_times_x&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="c1"&gt;// X_i * correction&lt;/span&gt;
+&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x_i&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;correction&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;}&lt;/p&gt;
+&lt;p&gt;Minimal divi Algorithm&lt;/p&gt;
+&lt;p&gt;The basic algorithm focuses on normalization and iteration. The divi function transforms the inputs n and d into positive magnitudes, normalizes the denominator d to the range [0.5, 1.0], performs the Newton-Raphson iteration for 1/d, and then calculates n * (1/d).&lt;/p&gt;
+&lt;p&gt;// Minimal implementation without complex scaling/edge cases
+FixedPoint divi_minimal(int n, int d) {
+if (d == 0) /* CRASH */;
+if (n == 0) return FixedPoint(0);&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="kt"&gt;bool&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;result_is_negative&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="nx"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;!=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;d&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
+
+&lt;span class="c1"&gt;// Use absolute values for calculation&lt;/span&gt;
+&lt;span class="nx"&gt;uint32_t&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;nv&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;static_cast&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;uint32_t&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;(&lt;/span&gt;&lt;span class="nx"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="nx"&gt;abs&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;n&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
+&lt;span class="nx"&gt;uint32_t&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;dv&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;static_cast&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;uint32_t&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;(&lt;/span&gt;&lt;span class="nx"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="nx"&gt;abs&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;d&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
+
+&lt;span class="c1"&gt;// 1. Normalize Denominator to [0.5, 1.0]&lt;/span&gt;
+&lt;span class="c1"&gt;// The clz is a rough approximation of the shift needed for normalization.&lt;/span&gt;
+&lt;span class="nx"&gt;int&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;clz&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;std&lt;/span&gt;&lt;span class="o"&gt;::&lt;/span&gt;&lt;span class="nx"&gt;clz&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;dv&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;// Count leading zeros (standard C++20 function)&lt;/span&gt;
+&lt;span class="nx"&gt;int&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;shift&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;clz&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;
+
+&lt;span class="nx"&gt;uint32_t&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;d_normalized&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;dv&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&amp;lt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;shift&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="nx"&gt;uint32_t&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;n_normalized&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;nv&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&amp;lt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;shift&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="c1"&gt;// Convert to FixedPoint (assuming we can represent the 32-bit normalized value)&lt;/span&gt;
+&lt;span class="nx"&gt;FixedPoint&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;d_scaled&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;static_cast&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;FixedPointType&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;(&lt;/span&gt;&lt;span class="nx"&gt;d_normalized&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;16&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;// Simplistic cast&lt;/span&gt;
+&lt;span class="nx"&gt;FixedPoint&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;n_scaled&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;static_cast&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nx"&gt;FixedPointType&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;(&lt;/span&gt;&lt;span class="nx"&gt;n_normalized&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;16&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;// Simplistic cast&lt;/span&gt;
+
+&lt;span class="c1"&gt;// 2. Newton-Raphson Iteration (3 steps for Q1.15 precision)&lt;/span&gt;
+&lt;span class="nx"&gt;FixedPoint&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;val&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;initial_approx&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;d_scaled&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="nx"&gt;val&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;nrstep&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;d_scaled&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;val&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;// E1&lt;/span&gt;
+&lt;span class="nx"&gt;val&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;nrstep&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;d_scaled&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;val&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;// E2&lt;/span&gt;
+&lt;span class="nx"&gt;val&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;nrstep&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;d_scaled&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;val&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;// E3 (Final accuracy)&lt;/span&gt;
+
+&lt;span class="c1"&gt;// 3. Final Multiplication: N * (1/D)&lt;/span&gt;
+&lt;span class="nx"&gt;FixedPoint&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;res&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;n_scaled&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;val&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+
+&lt;span class="c1"&gt;// 4. Apply final sign&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;result_is_negative&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="nx"&gt;res&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;res&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;FixedPoint&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;// Simplistic sign flip&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="c1"&gt;// Note: Saturation logic would be applied here in a full implementation.&lt;/span&gt;
+&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nx"&gt;res&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;}&lt;/p&gt;
+&lt;h2&gt;Optimizations&lt;/h2&gt;
+&lt;p&gt;The original LLVM divi function implements three major optimizations for performance and correctness:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Power-of-Two Denominator Shortcut&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;When the denominator d is a power of two (+/- 2^k), the division N/D simplifies to a bit shift. This avoids the entire costly iterative Newton-Raphson loop.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Detection: The isPowerOfTwo check is a constant-time operation.&lt;/li&gt;
+&lt;li&gt;Calculation: The operation is (N \&amp;lt;\&amp;lt; F) &amp;gt;&amp;gt; k, where F is the fraction length and k is the exponent of two. This is calculated using int64_t (e.g., res64) to prevent overflow when scaling the numerator N by 2^F. This shortcut is exact and minimal in terms of CPU cycles.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;!-- end list --&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Pure Integer Saturation Logic&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;The original code attempted to check for saturation (overflow) using long accum (a fixed-point floating type), which led to incorrect results due to conversion errors, especially when dealing with INT_MIN.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Optimization: The saturation check was replaced with a pure integer comparison of the raw 64-bit result (res64) against the integer limits of the target XType. This keeps the check in the native integer domain, where fixed-point precision is maintained, ensuring correct saturation to FXRep\&amp;lt;XType&amp;gt;::MAX() or FXRep\&amp;lt;XType&amp;gt;::MIN().&lt;/li&gt;
+&lt;/ul&gt;
+&lt;!-- end list --&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Compile-Time Conditional Iteration&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;In the Newton-Raphson path, conditional logic controls the number of iterations based on the required precision.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Optimization: The if statements are constexpr on the fraction length (FRACTION_LEN). This means the compiler calculates the number of necessary iterations at compile time and eliminates the unused code. A type with a small fraction length (e.g., F=8) gets fewer iterations, saving runtime; a high-precision type (e.g., F=32) gets more iterations. This guarantees minimal runtime cost for the required precision.&lt;/li&gt;
+&lt;/ul&gt;</content></entry><entry><title>Typo Correction in LLVM</title><link href="https://fp32.org/compiler_typo_correction.html" rel="alternate"/><published>2025-09-07T00:00:00+05:30</published><updated>2025-09-07T00:00:00+05:30</updated><author><name>Shreeyash Pandey</name></author><id>tag:fp32.org,2025-09-07:/compiler_typo_correction.html</id><summary type="html">Typo Correction in LLVM</summary><content type="html">&lt;p&gt;If you&amp;rsquo;re in the business of writing code, you might have noticed that your
 compiler is capable of identifying and suggesting fixes for the typos in your
 programs.&lt;/p&gt;
 &lt;p&gt;For example, take the following code:&lt;/p&gt;

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="Shreeyash Pandey">
+    <meta name="description" content="Shreeyash's Blog">
+    <link rel="alternate" href="/atom.xml" type="application/atom+xml">
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <title>Faster Division With Newton-Raphson Approximation | Shreeyash's Blog</title>
+  </head>
+
+  <body>
+    <header>
+      <h1><a href="/">Thoughts, et cetera.</a></h1>
+      <nav>
+        <h2>Shreeyash's Blog</h2>
+        <ul>
+          <li><h2><a href="/">Blog</a></h2></li>
+          <li><h2><a href="/archive.html">Archive</a></h2></li>
+          <li><h2><a href="/tags/">Tags</a></h2></li>
+          <li><h2><a href="/links.html">Links</a></h2></li>
+          <li><h2><a href="/about.html">About Me</a></h2></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+    
+
+  
+  <h2>Faster Division With Newton-Raphson Approximation</h2>
+  
+
+  <aside>
+    <p>published on 2025-10-04
+
+    
+    · tagged with
+      
+        <a href="/tags/cs.html">#cs</a>
+    
+    </p>
+  </aside>
+
+  <p>Many devices, especially embedded devices (micro-controllers and the like) do
+not come with an <a href="https://en.wikipedia.org/wiki/Floating-point_unit">FPU</a> and
+circuitry required for carrying out integer division. In such a case, one looks
+towards methods of approximating the results of division and storing them in
+<a href="https://en.wikipedia.org/wiki/Fixed-point_arithmetic">Fixed Point</a> format.</p>
+<p>C has standardized support for such an instance via its stdfix library. The <a href="https://standards.iso.org/ittf/PubliclyAvailableStandards/c051126_ISO_IEC_TR_18037_2008.zip">ISO
+Document</a>
+describes the data types and functions available in <code>stdfix.h</code>.</p>
+<p>This post describes the theory, provides a dependency-free C++ implementation of
+the core algorithm and discusses optimizations to speed it up even further. In
+that order.</p>
+<h2>Theory</h2>
+<p>The problem at hand is that of division:</p>
+<div class="codehilite"><pre><span></span><code>C = N/D
+</code></pre></div>
+
+<p>The first step to solving this is to split the problem in two: Reciprocal
+calculation, followed by multiplication. This is what it looks like:</p>
+<div class="codehilite"><pre><span></span><code>C = N * (1/D)
+</code></pre></div>
+
+<p>It is assumed that the device has a fast multiplication hardware (which is
+mostly the case). Thus, multiplication can be carried out by the good old <code>mul</code>
+instruction. Now for the most tricky part - calculating the reciprocal - which
+is a division operation!</p>
+<p>As it turns out, this is a well known problem, so we have the solutions! </p>
+<h3>Newton-Raphson Method</h3>
+<p>The <a href="https://en.wikipedia.org/wiki/Division_algorithm#Newton%E2%80%93Raphson_division">Wikipedia
+article</a>
+suffiecienty describes what and how of NR Method. I&rsquo;ll summarize and add some
+missing context to make it digestable. </p>
+<p>&ldquo;<a href="https://en.wikipedia.org/wiki/Newton%27s_method">Newton&rsquo;s Method</a> is a
+root-finding algorithm which produces successively better approximations to the
+roots (or zeroes) of a real-valued function.&rdquo; </p>
+<h3 align="center">
+<math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mi>x</mi><mrow><mn>1</mn><mo>&#xA0;</mo></mrow></msub><mo>=</mo><mo>&#xA0;</mo><msub><mi>x</mi><mrow><mn>0</mn><mo>&#xA0;</mo></mrow></msub><mo>-</mo><mo>&#xA0;</mo><mfrac><mrow><mi>f</mi><mo>(</mo><msub><mi>x</mi><mn>0</mn></msub><mo>)</mo></mrow><mrow><mi>f</mi><mo>'</mo><mo>(</mo><msub><mi>x</mi><mn>0</mn></msub><mo>)</mo></mrow></mfrac><mo>&#xA0;</mo><mo>&#xA0;</mo></math>
+</h3>
+
+<p>The idea is to convert <code>1/D</code> into an equation, plug it into the above equation
+and find the roots that allow us to successively approximate. </p>
+<h2>Implementation</h2>
+<p>To demonstrate the basic algorithm, we must first abstract the fixed-point types (XType, long accum) into a standalone class. We will use a Q1.15 format (1 sign/int bit, 15 fraction bits) for our example.</p>
+<p>Minimal Fixed-Point Implementation (Q1.15)</p>
+<p>The FixedPoint class will simulate the necessary fixed-point operations.</p>
+<p>// Fixed-Point Type: Q1.15 (1 sign/int bit, 15 fraction bits)
+// TotalBits = 16, FractionLength (F) = 15
+using FixedPointType = int16_t;</p>
+<p>class FixedPoint {
+private:
+FixedPointType value;
+static constexpr int F = 15;
+static constexpr int MAX_VAL = (1 \&lt;\&lt; (F - 1)) - 1; // 32767
+static constexpr int MIN_VAL = -(1 \&lt;\&lt; (F - 1)); // -32768</p>
+<p>public:
+FixedPoint(FixedPointType v) : value(v) {}
+FixedPointType get_value() const { return value; }
+static FixedPoint MAX() { return FixedPoint(MAX_VAL); }
+static FixedPoint MIN() { return FixedPoint(MIN_VAL); }
+static FixedPoint ONE() { return FixedPoint(1 \&lt;\&lt; F); } // 32768, often saturates to MAX</p>
+<div class="codehilite"><pre><span></span><code><span class="o">//</span><span class="w"> </span><span class="n">Simplistic</span><span class="w"> </span><span class="n">multiplication</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">demonstration</span><span class="w"> </span><span class="p">(</span><span class="n">will</span><span class="w"> </span><span class="n">overflow</span><span class="o">/</span><span class="n">truncate</span><span class="p">)</span>
+<span class="n">FixedPoint</span><span class="w"> </span><span class="n">operator</span><span class="o">*</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">FixedPoint</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="o">//</span><span class="w"> </span><span class="n">Use</span><span class="w"> </span><span class="mi">32</span><span class="o">-</span><span class="n">bit</span><span class="w"> </span><span class="n">intermediate</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">multiplication</span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="n">A</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">B</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="o">^</span><span class="n">F</span>
+<span class="w">    </span><span class="n">int32_t</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">static_cast</span><span class="o">&lt;</span><span class="n">int32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">other</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">F</span><span class="p">;</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">FixedPoint</span><span class="p">(</span><span class="n">static_cast</span><span class="o">&lt;</span><span class="n">FixedPointType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">result</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="o">//</span><span class="w"> </span><span class="n">Simplistic</span><span class="w"> </span><span class="n">subtraction</span>
+<span class="n">FixedPoint</span><span class="w"> </span><span class="n">operator</span><span class="o">-</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">FixedPoint</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">FixedPoint</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">other</span><span class="o">.</span><span class="n">value</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>};</p>
+<p>// Helper for initial reciprocal approximation (x0 = 2.8235 - 1.8823 * d)
+// Coefficients are Q1.15 fixed-point representations of 48/17 and 32/17.
+// d_scaled is the denominator normalized to [0.5, 1.0]
+FixedPoint initial_approx(FixedPoint d_scaled) {
+// 48/17 * 2^15 = 92523 (approx) -&gt; 0x16A6B
+FixedPoint a(0x16A6B);
+// 32/17 * 2^15 = 61682 (approx) -&gt; 0xF0F2
+FixedPoint b(0x0F0F2);</p>
+<div class="codehilite"><pre><span></span><code>FixedPoint b_times_d = b * d_scaled;
+return a - b_times_d;
+</code></pre></div>
+
+<p>}</p>
+<p>// Newton-Raphson iteration step: X_i+1 = X_i * (2 - D * X_i)
+FixedPoint nrstep(FixedPoint d_scaled, FixedPoint x_i) {
+// D * X_i
+FixedPoint d_times_x = d_scaled * x_i;</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// 2 (2 * 2^15)</span>
+<span class="n">FixedPoint</span><span class="w"> </span><span class="n">two</span><span class="p">(</span><span class="mi">0</span><span class="n">x20000</span><span class="p">);</span><span class="w"> </span>
+
+<span class="c1">// (2 - D * X_i)</span>
+<span class="n">FixedPoint</span><span class="w"> </span><span class="n">correction</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">two</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">d_times_x</span><span class="p">;</span>
+
+<span class="c1">// X_i * correction</span>
+<span class="k">return</span><span class="w"> </span><span class="n">x_i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">correction</span><span class="p">;</span>
+</code></pre></div>
+
+<p>}</p>
+<p>Minimal divi Algorithm</p>
+<p>The basic algorithm focuses on normalization and iteration. The divi function transforms the inputs n and d into positive magnitudes, normalizes the denominator d to the range [0.5, 1.0], performs the Newton-Raphson iteration for 1/d, and then calculates n * (1/d).</p>
+<p>// Minimal implementation without complex scaling/edge cases
+FixedPoint divi_minimal(int n, int d) {
+if (d == 0) /* CRASH */;
+if (n == 0) return FixedPoint(0);</p>
+<div class="codehilite"><pre><span></span><code><span class="kt">bool</span><span class="w"> </span><span class="nx">result_is_negative</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">((</span><span class="nx">n</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="p">(</span><span class="nx">d</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+
+<span class="c1">// Use absolute values for calculation</span>
+<span class="nx">uint32_t</span><span class="w"> </span><span class="nx">nv</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">static_cast</span><span class="p">&lt;</span><span class="nx">uint32_t</span><span class="p">&gt;(</span><span class="nx">std</span><span class="o">::</span><span class="nx">abs</span><span class="p">(</span><span class="nx">n</span><span class="p">));</span>
+<span class="nx">uint32_t</span><span class="w"> </span><span class="nx">dv</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">static_cast</span><span class="p">&lt;</span><span class="nx">uint32_t</span><span class="p">&gt;(</span><span class="nx">std</span><span class="o">::</span><span class="nx">abs</span><span class="p">(</span><span class="nx">d</span><span class="p">));</span>
+
+<span class="c1">// 1. Normalize Denominator to [0.5, 1.0]</span>
+<span class="c1">// The clz is a rough approximation of the shift needed for normalization.</span>
+<span class="nx">int</span><span class="w"> </span><span class="nx">clz</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">std</span><span class="o">::</span><span class="nx">clz</span><span class="p">(</span><span class="nx">dv</span><span class="p">);</span><span class="w"> </span><span class="c1">// Count leading zeros (standard C++20 function)</span>
+<span class="nx">int</span><span class="w"> </span><span class="nx">shift</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">clz</span><span class="p">;</span><span class="w"> </span>
+
+<span class="nx">uint32_t</span><span class="w"> </span><span class="nx">d_normalized</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">dv</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="nx">shift</span><span class="p">;</span>
+<span class="nx">uint32_t</span><span class="w"> </span><span class="nx">n_normalized</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">nv</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="nx">shift</span><span class="p">;</span>
+
+<span class="c1">// Convert to FixedPoint (assuming we can represent the 32-bit normalized value)</span>
+<span class="nx">FixedPoint</span><span class="w"> </span><span class="nx">d_scaled</span><span class="p">(</span><span class="nx">static_cast</span><span class="p">&lt;</span><span class="nx">FixedPointType</span><span class="p">&gt;(</span><span class="nx">d_normalized</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">16</span><span class="p">));</span><span class="w"> </span><span class="c1">// Simplistic cast</span>
+<span class="nx">FixedPoint</span><span class="w"> </span><span class="nx">n_scaled</span><span class="p">(</span><span class="nx">static_cast</span><span class="p">&lt;</span><span class="nx">FixedPointType</span><span class="p">&gt;(</span><span class="nx">n_normalized</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">16</span><span class="p">));</span><span class="w"> </span><span class="c1">// Simplistic cast</span>
+
+<span class="c1">// 2. Newton-Raphson Iteration (3 steps for Q1.15 precision)</span>
+<span class="nx">FixedPoint</span><span class="w"> </span><span class="nx">val</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">initial_approx</span><span class="p">(</span><span class="nx">d_scaled</span><span class="p">);</span>
+<span class="nx">val</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">nrstep</span><span class="p">(</span><span class="nx">d_scaled</span><span class="p">,</span><span class="w"> </span><span class="nx">val</span><span class="p">);</span><span class="w"> </span><span class="c1">// E1</span>
+<span class="nx">val</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">nrstep</span><span class="p">(</span><span class="nx">d_scaled</span><span class="p">,</span><span class="w"> </span><span class="nx">val</span><span class="p">);</span><span class="w"> </span><span class="c1">// E2</span>
+<span class="nx">val</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">nrstep</span><span class="p">(</span><span class="nx">d_scaled</span><span class="p">,</span><span class="w"> </span><span class="nx">val</span><span class="p">);</span><span class="w"> </span><span class="c1">// E3 (Final accuracy)</span>
+
+<span class="c1">// 3. Final Multiplication: N * (1/D)</span>
+<span class="nx">FixedPoint</span><span class="w"> </span><span class="nx">res</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">n_scaled</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">val</span><span class="p">;</span>
+
+<span class="c1">// 4. Apply final sign</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">result_is_negative</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">res</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">res</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">FixedPoint</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">// Simplistic sign flip</span>
+<span class="p">}</span>
+
+<span class="c1">// Note: Saturation logic would be applied here in a full implementation.</span>
+<span class="k">return</span><span class="w"> </span><span class="nx">res</span><span class="p">;</span>
+</code></pre></div>
+
+<p>}</p>
+<h2>Optimizations</h2>
+<p>The original LLVM divi function implements three major optimizations for performance and correctness:</p>
+<ol>
+<li>Power-of-Two Denominator Shortcut</li>
+</ol>
+<p>When the denominator d is a power of two (+/- 2^k), the division N/D simplifies to a bit shift. This avoids the entire costly iterative Newton-Raphson loop.</p>
+<ul>
+<li>Detection: The isPowerOfTwo check is a constant-time operation.</li>
+<li>Calculation: The operation is (N \&lt;\&lt; F) &gt;&gt; k, where F is the fraction length and k is the exponent of two. This is calculated using int64_t (e.g., res64) to prevent overflow when scaling the numerator N by 2^F. This shortcut is exact and minimal in terms of CPU cycles.</li>
+</ul>
+<!-- end list -->
+
+<ol>
+<li>Pure Integer Saturation Logic</li>
+</ol>
+<p>The original code attempted to check for saturation (overflow) using long accum (a fixed-point floating type), which led to incorrect results due to conversion errors, especially when dealing with INT_MIN.</p>
+<ul>
+<li>Optimization: The saturation check was replaced with a pure integer comparison of the raw 64-bit result (res64) against the integer limits of the target XType. This keeps the check in the native integer domain, where fixed-point precision is maintained, ensuring correct saturation to FXRep\&lt;XType&gt;::MAX() or FXRep\&lt;XType&gt;::MIN().</li>
+</ul>
+<!-- end list -->
+
+<ol>
+<li>Compile-Time Conditional Iteration</li>
+</ol>
+<p>In the Newton-Raphson path, conditional logic controls the number of iterations based on the required precision.</p>
+<ul>
+<li>Optimization: The if statements are constexpr on the fraction length (FRACTION_LEN). This means the compiler calculates the number of necessary iterations at compile time and eliminates the unused code. A type with a small fraction length (e.g., F=8) gets fewer iterations, saving runtime; a high-precision type (e.g., F=32) gets more iterations. This guarantees minimal runtime cost for the required precision.</li>
+</ul>
+
+
+    </main>
+
+    <footer>
+      <p>This website was built with <a href="https://github.com/venthur/blag">blag</a>.
+      <br>
+      Subscribe to the <a href="/atom.xml">atom feed</a>.
+      <br>
+      © 2025, Shreeyash Pandey 
+      </p>
+    </footer>
+  </body>
+
+</html>
