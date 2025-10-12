@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="Shreeyash Pandey">
+    <meta name="description" content="Shreeyash's Blog">
+    <link rel="alternate" href="/atom.xml" type="application/atom+xml">
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <title>Ghidra Decompiler - CLI guide | Shreeyash's Blog</title>
+  </head>
+
+  <body>
+    <header>
+      <h1><a href="/">Thoughts, et cetera.</a></h1>
+      <nav>
+        <h2>Shreeyash's Blog</h2>
+        <ul>
+          <li><h2><a href="/">Blog</a></h2></li>
+          <li><h2><a href="/archive.html">Archive</a></h2></li>
+          <li><h2><a href="/tags/">Tags</a></h2></li>
+          <li><h2><a href="/links.html">Links</a></h2></li>
+          <li><h2><a href="/about.html">About Me</a></h2></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+    
+
+  
+  <h2>Ghidra Decompiler - CLI guide</h2>
+  
+
+  <aside>
+    <p>published on 2024-08-16
+
+    
+    · tagged with
+      
+        <a href="/tags/reverse engineering.html">#reverse engineering</a>
+    
+    </p>
+  </aside>
+
+  <h1>Ghidra Decompiler - CLI guide</h1>
+<p><a href="https://ghidra-sre.org/">Ghidra</a> has a decompiler that unlike the rest
+of the program (written in java) is written in C++. This caught my
+attention so I started to hack on it. Unfortunately, there isn't much
+written on the decompiler if one wants to use it standalone, in the
+terminal without the ghidra GUI. This article tries to fill that void.</p>
+<h2>Building The Decompiler</h2>
+<p>Fetch and unzip the ghidra package from <a href="https://github.com/NationalSecurityAgency/ghidra/releases">their github release
+page</a></p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>unzip<span class="w"> </span>ghidra_11.1.2_PUBLIC_20240709.zip
+</code></pre></div>
+
+<p><code>cd</code> into the decompiler directory and build it</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>ghidra_11.1.2_PUBLIC/Ghidra/Features/Decompiler/src/decompile/cpp
+$<span class="w"> </span>make<span class="w"> </span>decomp_opt<span class="w"> </span>-j<span class="w"> </span><span class="k">$(</span>nproc<span class="w"> </span>--all<span class="k">)</span>
+</code></pre></div>
+
+<p>You should end up with a executable called <code>decomp_opt</code>.</p>
+<h2>Running the Decompiler</h2>
+<p>While inside the directory, export the SLEIGHHOME env variable so our
+decompiler can find it, then run the executable.</p>
+<div class="codehilite"><pre><span></span><code><span class="err">$</span><span class="w"> </span><span class="n">export</span><span class="w"> </span><span class="n">SLEIGHHOME</span><span class="o">=/</span><span class="n">home</span><span class="o">/</span><span class="n">shreeyash</span><span class="o">/</span><span class="n">ghidra_11</span><span class="mf">.1.2</span><span class="n">_PUBLIC</span>
+<span class="err">$</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">decomp_opt</span>
+<span class="o">[</span><span class="n">decomp</span><span class="o">]&gt;</span>
+</code></pre></div>
+
+<p>The compiler is running now waiting for commands.</p>
+<p><strong>Note</strong>:</p>
+<p>Remember to always export the environment variable before running
+decomp_opt. You could consider tossing the two commands into a script,
+making life easier for you.</p>
+<h2>Decompile and view an ELF executable</h2>
+<p>Let's start with a trivial c++ program with some control flow, compile
+it into an executable (ELF) and decompile it.</p>
+<p>Here's the program, save and compile it:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">$</span><span class="w"> </span><span class="n">cat</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">cpp</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+<span class="cp">#define THRESHOLD 20</span>
+<span class="kr">int</span><span class="w"> </span><span class="n">foo</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kr">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kr">int</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">foo</span><span class="p">();</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;The threshold is &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">THRESHOLD</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;You returned &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">b</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">THRESHOLD</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;get in</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;get out!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+<span class="n">$</span><span class="w"> </span><span class="n">g</span><span class="o">++</span><span class="w"> </span><span class="o">-</span><span class="n">no</span><span class="o">-</span><span class="n">pie</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">cpp</span><span class="w"> </span><span class="o">-</span><span class="n">o</span><span class="w"> </span><span class="n">a</span>
+<span class="n">$</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">a</span>
+<span class="n">The</span><span class="w"> </span><span class="n">threshold</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="mi">20</span>
+<span class="n">You</span><span class="w"> </span><span class="n">returned</span><span class="w"> </span><span class="mi">10</span>
+<span class="nf">get</span><span class="w"> </span><span class="n">in</span>
+</code></pre></div>
+
+<p>The executable is ready, what's left now is decompilation.</p>
+<p>Let's start the decompiler, and load our file:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">$</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">decomp_opt</span>
+<span class="o">[</span><span class="n">decomp</span><span class="o">]&gt;</span><span class="w"> </span><span class="k">load</span><span class="w"> </span><span class="k">file</span><span class="w"> </span><span class="n">a</span><span class="w">                        </span>
+<span class="n">a</span><span class="w"> </span><span class="n">successfully</span><span class="w"> </span><span class="nl">loaded</span><span class="p">:</span><span class="w"> </span><span class="n">Intel</span><span class="o">/</span><span class="n">AMD</span><span class="w"> </span><span class="mi">64</span><span class="o">-</span><span class="nc">bit</span><span class="w"> </span><span class="n">x86</span><span class="w">     </span>
+</code></pre></div>
+
+<p>We've loaded our executable in the decompiler. c++ is an abstract language with constructs that do not make any sense
+to a CPU. These include, but are not limited to: functions, structs, loops etc. In order to implement these, the
+compiler has to translate abstractions into concrete implementation which manifests itself in the form of control flow
+instructions like branch, compare, and jump. If we peep into an executable, we'll notice what we called functions are
+now 'addresses' i.e. a number that represents a location in memory. Functions are run by jumping (i.e. setting the
+program counter) to an address. Essentially, if we wish to decompile a function we had in source, we'll have to find
+the corresponding address at which it resides. <code>a.cpp</code> has two functions: <code>main</code> and <code>foo</code>. To find the address where a
+functions resides in the executable, we could use <code>objdump</code>.</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>objdump<span class="w"> </span>-C<span class="w"> </span>-D<span class="w"> </span>a
+...
+00000000004011c5<span class="w"> </span>&lt;main&gt;:
+4011c5:<span class="w">       </span>f3<span class="w"> </span>0f<span class="w"> </span>1e<span class="w"> </span>fa<span class="w">             </span>endbr64
+4011c9:<span class="w">       </span><span class="m">55</span><span class="w">                      </span>push<span class="w">   </span>%rbp
+4011ca:<span class="w">       </span><span class="m">48</span><span class="w"> </span><span class="m">89</span><span class="w"> </span>e5<span class="w">                </span>mov<span class="w">    </span>%rsp,%rbp
+4011cd:<span class="w">       </span><span class="m">48</span><span class="w"> </span><span class="m">83</span><span class="w"> </span>ec<span class="w"> </span><span class="m">10</span><span class="w">             </span>sub<span class="w">    </span><span class="nv">$0</span>x10,%rsp
+4011d1:<span class="w">       </span>e8<span class="w"> </span>e0<span class="w"> </span>ff<span class="w"> </span>ff<span class="w"> </span>ff<span class="w">          </span>call<span class="w">   </span>4011b6<span class="w"> </span>&lt;_Z5todayv&gt;
+4011d6:<span class="w">       </span><span class="m">89</span><span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="nb">fc</span><span class="w">                </span>mov<span class="w">    </span>%eax,-0x4<span class="o">(</span>%rbp<span class="o">)</span>
+4011d9:<span class="w">       </span><span class="m">48</span><span class="w"> </span>8d<span class="w"> </span><span class="m">05</span><span class="w"> </span><span class="m">24</span><span class="w"> </span>0e<span class="w"> </span><span class="m">00</span><span class="w"> </span><span class="m">00</span><span class="w">    </span>lea<span class="w">    </span>0xe24<span class="o">(</span>%rip<span class="o">)</span>,%rax<span class="w">        </span><span class="c1"># 402004 &lt;_IO_stdin_used+0x4&gt;</span>
+4011e0:<span class="w">       </span><span class="m">48</span><span class="w"> </span><span class="m">89</span><span class="w"> </span>c6<span class="w">                </span>mov<span class="w">    </span>%rax,%rsi
+4011e3:<span class="w">       </span><span class="m">48</span><span class="w"> </span>8d<span class="w"> </span><span class="m">05</span><span class="w"> </span><span class="m">96</span><span class="w"> </span>2e<span class="w"> </span><span class="m">00</span><span class="w"> </span><span class="m">00</span><span class="w">    </span>lea<span class="w">    </span>0x2e96<span class="o">(</span>%rip<span class="o">)</span>,%rax<span class="w">        </span><span class="c1"># 404080 &lt;_ZSt4cout@GLIBCXX_3.4&gt;</span>
+4011ea:<span class="w">       </span><span class="m">48</span><span class="w"> </span><span class="m">89</span><span class="w"> </span>c7<span class="w">                </span>mov<span class="w">    </span>%rax,%rdi
+4011ed:<span class="w">       </span>e8<span class="w"> </span>9e<span class="w"> </span>fe<span class="w"> </span>ff<span class="w"> </span>ff<span class="w">          </span>call<span class="w">   </span><span class="m">401090</span><span class="w"> </span>&lt;_ZStlsISt11char_traitsIcEERSt13basic_ostreamIcT_ES5_PKc@plt&gt;
+4011f2:<span class="w">       </span><span class="m">48</span><span class="w"> </span><span class="m">89</span><span class="w"> </span>c2<span class="w">                </span>mov<span class="w">    </span>%rax,%rdx
+4011f5:<span class="w">       </span>8b<span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="nb">fc</span><span class="w">                </span>mov<span class="w">    </span>-0x4<span class="o">(</span>%rbp<span class="o">)</span>,%eax
+...
+</code></pre></div>
+
+<p>Searching for 'main' reveals its label which resides at address
+<code>0x4011c5</code>.</p>
+<div class="codehilite"><pre><span></span><code><span class="o">[</span><span class="n">decomp</span><span class="o">]&gt;</span><span class="w"> </span><span class="k">load</span><span class="w"> </span><span class="n">addr</span><span class="w"> </span><span class="mh">0x4011c5</span><span class="w"> </span><span class="n">main</span><span class="w">                  </span>
+<span class="k">Function</span><span class="w"> </span><span class="nl">main</span><span class="p">:</span><span class="w"> </span><span class="mh">0x004011c5</span><span class="w">                          </span>
+</code></pre></div>
+
+<p><code>load addr</code> takes an address and an optional 'label'.
+Label is essentially a name that we assign to that address. In this
+case, it was 'main'&mdash;could've been anything for what its worth.</p>
+<div class="codehilite"><pre><span></span><code><span class="o">[</span><span class="n">decomp</span><span class="o">]&gt;</span><span class="w"> </span><span class="n">decompile</span><span class="w">                             </span>
+<span class="n">Decompiling</span><span class="w"> </span><span class="n">main</span><span class="w">                                   </span>
+<span class="n">Decompilation</span><span class="w"> </span><span class="n">complete</span><span class="w">                          </span>
+<span class="o">[</span><span class="n">decomp</span><span class="o">]&gt;</span><span class="w"> </span><span class="k">print</span><span class="w"> </span><span class="n">C</span><span class="w">                               </span>
+
+<span class="n">xunknown8</span><span class="w"> </span><span class="n">main</span><span class="p">(</span><span class="n">void</span><span class="p">)</span>
+
+<span class="err">{</span>
+<span class="w">  </span><span class="n">int4</span><span class="w"> </span><span class="n">iVar1</span><span class="p">;</span>
+<span class="w">  </span><span class="n">xunknown8</span><span class="w"> </span><span class="n">xVar2</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">iVar1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">func_0x004011b6</span><span class="p">();</span>
+<span class="w">  </span><span class="n">xVar2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">func_0x00401090</span><span class="p">(</span><span class="mh">0x404080</span><span class="p">,</span><span class="mh">0x402004</span><span class="p">);</span>
+<span class="w">  </span><span class="n">xVar2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">func_0x004010c0</span><span class="p">(</span><span class="n">xVar2</span><span class="p">,</span><span class="mh">0x14</span><span class="p">);</span>
+<span class="w">  </span><span class="n">func_0x004010a0</span><span class="p">(</span><span class="n">xVar2</span><span class="p">,</span><span class="mi">10</span><span class="p">);</span>
+<span class="w">  </span><span class="n">xVar2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">func_0x00401090</span><span class="p">(</span><span class="mh">0x404080</span><span class="p">,</span><span class="mh">0x402016</span><span class="p">);</span>
+<span class="w">  </span><span class="n">xVar2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">func_0x004010c0</span><span class="p">(</span><span class="n">xVar2</span><span class="p">,</span><span class="n">iVar1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">func_0x004010a0</span><span class="p">(</span><span class="n">xVar2</span><span class="p">,</span><span class="mi">10</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iVar1</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mh">0x14</span><span class="p">)</span><span class="w"> </span><span class="err">{</span>
+<span class="w">    </span><span class="n">func_0x00401090</span><span class="p">(</span><span class="mh">0x404080</span><span class="p">,</span><span class="mh">0x402024</span><span class="p">);</span>
+<span class="w">  </span><span class="err">}</span>
+<span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="err">{</span>
+<span class="w">    </span><span class="n">func_0x00401090</span><span class="p">(</span><span class="mh">0x404080</span><span class="p">,</span><span class="mh">0x40202c</span><span class="p">);</span>
+<span class="w">  </span><span class="err">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="err">}</span>
+<span class="o">[</span><span class="n">decomp</span><span class="o">]&gt;</span>
+</code></pre></div>
+
+<p>Just like that, we've decompiled our program. Notice how the names are
+garbled. This is because names (of variables and functions) are really
+neccessary to execute a program.</p>
+<p>Let's analyze the decompiled output. The latter part of all function
+names are their address. This means, we can look them up in the
+<code>objdump</code>. Moreover, if the set of commands that got us
+<code>main</code> s decompilation we to be repeated for all the
+functions present in in the output, the resulting decompilation of main
+would replace all address with the labels we assign to them. Looking up
+in <code>objdump</code>, we find <code>func_0x004011b6</code> to be
+foo:</p>
+<div class="codehilite"><pre><span></span><code>...
+00000000004011b6 &lt;foo()&gt;:
+4011b6:       f3 0f 1e fa             endbr64
+4011ba:       55                      push   %rbp
+4011bb:       48 89 e5                mov    %rsp,%rbp
+4011be:       b8 0a 00 00 00          mov    $0xa,%eax
+...
+</code></pre></div>
+
+<p><code>func_0x00401090</code> is not present in the executable, however,
+the calls to this function are shown in the objdump thusly:</p>
+<div class="codehilite"><pre><span></span><code><span class="mi">4011</span><span class="n">ed</span><span class="o">:</span><span class="w">       </span><span class="n">e8</span><span class="w"> </span><span class="mi">9</span><span class="n">e</span><span class="w"> </span><span class="n">fe</span><span class="w"> </span><span class="n">ff</span><span class="w"> </span><span class="n">ff</span><span class="w">          </span><span class="n">call</span><span class="w">   </span><span class="mi">401090</span><span class="w"> </span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">basic_ostream</span><span class="o">&lt;</span><span class="n">char</span><span class="o">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">char_traits</span><span class="o">&lt;</span><span class="n">char</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">operator</span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">char_traits</span><span class="o">&lt;</span><span class="n">char</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&gt;(</span><span class="n">std</span><span class="o">::</span><span class="n">basic_ostream</span><span class="o">&lt;</span><span class="n">char</span><span class="o">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">char_traits</span><span class="o">&lt;</span><span class="n">char</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&gt;&amp;,</span><span class="w"> </span><span class="n">char</span><span class="w"> </span><span class="kd">const</span><span class="o">*)</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+</code></pre></div>
+
+<p>Its quite obvious from the hint that <code>func_0x00401090</code> is the operator <code>\&lt;\&lt;</code> overloaded to accept a
+<code>std::basic_ostream</code> object and a <code>const char \*</code>. The <code>\@plt</code> at the end indicates that this
+function can be found in the <code>.plt</code> section of the executable. <code>.plt</code> which stands for Procedure
+Linkage Table is a redirection table of external functions that can be found in shared objects. So,
+<code>func_0x00401090</code> is <code>operator\&lt;\&lt;</code> found in <code>libstdc++.so</code> that the program is
+linked to. It takes two arguments: both addresses to objects. A search reveals that the first argumnet is the object
+<code>std::cout</code> of which the definition resides in an external library (<code>libstdc++.so</code>) and the
+other argument is a char literal that can be found in the <code>.rodata</code> section of the executable.</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>objdup<span class="w"> </span>-s<span class="w"> </span>-j<span class="w"> </span>.rodata<span class="w"> </span>a
+Contents<span class="w"> </span>of<span class="w"> </span>section<span class="w"> </span>.rodata:
+<span class="m">402000</span><span class="w"> </span><span class="m">01000200</span><span class="w"> </span><span class="m">54686520</span><span class="w"> </span><span class="m">74687265</span><span class="w"> </span>73686f6c<span class="w">  </span>....The<span class="w"> </span>threshol
+<span class="m">402010</span><span class="w"> </span><span class="m">64206973</span><span class="w"> </span>2000596f<span class="w"> </span><span class="m">75207265</span><span class="w"> </span>7475726e<span class="w">  </span>d<span class="w"> </span>is<span class="w"> </span>.You<span class="w"> </span><span class="k">return</span>
+<span class="m">402020</span><span class="w"> </span><span class="m">65642000</span><span class="w"> </span><span class="m">67657420</span><span class="w"> </span>696e0a00<span class="w"> </span><span class="m">67657420</span><span class="w">  </span>ed<span class="w"> </span>.get<span class="w"> </span><span class="k">in</span>..get
+<span class="m">402030</span><span class="w"> </span>6f757421<span class="w"> </span>0a00<span class="w">                        </span>out!..
+</code></pre></div>
+
+<p>Indeed, the string <code>\"The threshold is \"</code> is present at
+address <code>0x0402004</code>.</p>
+<p>Likewise, all following functions till <code>func_0x004010a0</code> are
+overloads of <code>operator\&lt;\&lt;</code> that handle different types of
+data. What remains is the control flow. It checks if <code>iVar1</code>
+which is <code>b</code> in the original source is less than
+<code>0x14</code> (<code>THRESHOLD</code>) and calls the familiar
+<code>func_0x00401090</code> i.e. (<code>operator\&lt;\&lt;</code>).</p>
+<h2>Conclusion</h2>
+<p>Our work was made much easier by the fact that the executable was not
+'stripped'. Stripping is a process that gets rid of all the symbols
+that are not absolutely neccessary for execution (greatly reduces
+executable size). In the real world, especially if we are dealing with
+propreitary software, executables might be stripped. Unstripped
+executables allows us to tread faster by simply searching for symbols
+like we did to find main. Stripped executables require us to trace, find
+and deduce what we need. In a later article, I may demo decompilation of
+stripped executables.</p>
+
+
+    </main>
+
+    <footer>
+      <p>This website was built with <a href="https://github.com/venthur/blag">blag</a>.
+      <br>
+      Subscribe to the <a href="/atom.xml">atom feed</a>.
+      <br>
+      © 2025, Shreeyash Pandey 
+      </p>
+    </footer>
+  </body>
+
+</html>

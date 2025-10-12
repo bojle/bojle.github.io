@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="Shreeyash Pandey">
+    <meta name="description" content="Shreeyash's Blog">
+    <link rel="alternate" href="/atom.xml" type="application/atom+xml">
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <title>No-ISA is the Best ISA | Shreeyash's Blog</title>
+  </head>
+
+  <body>
+    <header>
+      <h1><a href="/">Thoughts, et cetera.</a></h1>
+      <nav>
+        <h2>Shreeyash's Blog</h2>
+        <ul>
+          <li><h2><a href="/">Blog</a></h2></li>
+          <li><h2><a href="/archive.html">Archive</a></h2></li>
+          <li><h2><a href="/tags/">Tags</a></h2></li>
+          <li><h2><a href="/links.html">Links</a></h2></li>
+          <li><h2><a href="/about.html">About Me</a></h2></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+    
+
+  
+  <h2>No-ISA is the Best ISA</h2>
+  
+
+  <aside>
+    <p>published on 2024-10-04
+
+    
+    · tagged with
+      
+        <a href="/tags/cs.html">#cs</a>
+    
+    </p>
+  </aside>
+
+  <h1>No-ISA is the Best ISA</h1>
+<p>This week, me and my colleague were present at the first <a href="https://compilertech.org/">compilertech.org</a> workshop talking
+about the work we are doing at <a href="https://vicharak.in/">Vicharak</a> involving FPGAs, Reconfigurable Computing and Compilers
+for such computers. This small blog post is a brief summary of the talk.</p>
+<p>The slides (and the extended slides) for the presentation are available
+at:
+<a href="https://github.com/vicharak-in/noisa">github.com/vicharak-in/noisa</a>.
+Video for the talk will soon be available.</p>
+<h2>Summary</h2>
+<p>The talk is divided into four chapters:</p>
+<h3>Chapter 1</h3>
+<p>Chapter 1 lists the problems with modern compute, key problems being the
+slowdown and end of Moore's law and Dennard scaling and the von-neumann
+bottleneck. We ask ourselves whether compute should be restricted to a
+small selection of available processors/architectures. Last slide in
+chapter 1 lists some concrete problems where using existing compute is
+difficult.</p>
+<h3>Chapter 2</h3>
+<p>Chapters 2 and 3 include an introduction to reconfigurable/heterogeneous
+computing and EDA compilers.</p>
+<p>Reconfiguration and Heterogeneity are the two key ideas of the
+architecture that we propose. A separation from von-neumann
+architectures, by the way of flow-based reconfigurable computers is
+discussed. The central theme of the idea is to make it easy/automate the
+generation of <strong>hardware</strong> for our algorithms instead of <strong>programs</strong>.
+In essence, the idea is to have a unique and optimal hardware for every
+software.</p>
+<h3>Chapter 3</h3>
+<p>Since solving problems through reconfigurable/heterogeneous require
+generation of hardware, EDA compilers and their efficiency has to be
+considered too. Chapter 3 is about EDA compilers being a nightmare to
+deal with in terms of flexibility, hackability, performance and
+adaptability.</p>
+<h3>Chapter 4</h3>
+<p>The last chapter is on the work done so far. For this, we've designed
+our own hardware
+(<a href="https://docs.vicharak.in/vicharak_sbcs/vaaman/vaaman-home/">Vaaman</a>)
+on which applications utilizing the Reconfigurable paradigm will be
+designed. Two applications on which we are actively working are: Gati
+(CNN accelerator) and Periplex (Peripheral Generator).</p>
+<p>Gati is a CNN accelerator that can generate custom (optimal) accelerator
+hardware for every NN model.</p>
+<p>Periplex provides easy generation and multiplexing of peripheral (UART,
+I2C, CAN, SPI etc.) along with linux device drivers for accessing them
+through POSIX APIs.</p>
+
+
+    </main>
+
+    <footer>
+      <p>This website was built with <a href="https://github.com/venthur/blag">blag</a>.
+      <br>
+      Subscribe to the <a href="/atom.xml">atom feed</a>.
+      <br>
+      © 2025, Shreeyash Pandey 
+      </p>
+    </footer>
+  </body>
+
+</html>

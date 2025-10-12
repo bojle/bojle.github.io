@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="Shreeyash Pandey">
+    <meta name="description" content="Shreeyash's Blog">
+    <link rel="alternate" href="/atom.xml" type="application/atom+xml">
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <title>When Reverse Engineering, Your Pattern Seeking Brain Is Your Friend | Shreeyash's Blog</title>
+  </head>
+
+  <body>
+    <header>
+      <h1><a href="/">Thoughts, et cetera.</a></h1>
+      <nav>
+        <h2>Shreeyash's Blog</h2>
+        <ul>
+          <li><h2><a href="/">Blog</a></h2></li>
+          <li><h2><a href="/archive.html">Archive</a></h2></li>
+          <li><h2><a href="/tags/">Tags</a></h2></li>
+          <li><h2><a href="/links.html">Links</a></h2></li>
+          <li><h2><a href="/about.html">About Me</a></h2></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+    
+
+  
+  <h2>When Reverse Engineering, Your Pattern Seeking Brain Is Your Friend</h2>
+  
+
+  <aside>
+    <p>published on 2024-07-12
+
+    
+    · tagged with
+      
+        <a href="/tags/reverse engineering.html">#reverse engineering</a>
+    
+    </p>
+  </aside>
+
+  <h1>When Reverse Engineering, Your Pattern Seeking Brain Is Your Friend</h1>
+<p>At work, I've been working on reverse engineering a propreitary file
+format that is used to represent a synthesized
+<a href="https://en.wikipedia.org/wiki/Netlist">netlist</a> for FPGAs by our
+vendor's EDA tools.</p>
+<p>It's a binary file, and here's a sample of the hexdump:</p>
+<div class="codehilite"><pre><span></span><code><span class="mo">00000000</span><span class="w">  </span><span class="mi">12</span><span class="w"> </span><span class="mi">6</span><span class="n">c</span><span class="w"> </span><span class="mf">1f</span><span class="w"> </span><span class="mo">03</span><span class="w"> </span><span class="mi">0</span><span class="n">b</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="n">a0</span><span class="w">  </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mi">40</span><span class="w"> </span><span class="n">e4</span><span class="w"> </span><span class="mi">7</span><span class="n">a</span><span class="w"> </span><span class="mf">1f</span><span class="w">  </span><span class="o">|</span><span class="p">.</span><span class="n">l</span><span class="p">..........@.</span><span class="n">z</span><span class="p">.</span><span class="o">|</span>
+<span class="mo">00000010</span><span class="w">  </span><span class="mo">03</span><span class="w"> </span><span class="mi">08</span><span class="w"> </span><span class="n">b6</span><span class="w"> </span><span class="mi">84</span><span class="w"> </span><span class="n">a3</span><span class="w"> </span><span class="mi">66</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w">  </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">01</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">02</span><span class="w">  </span><span class="o">|</span><span class="p">.....</span><span class="n">f</span><span class="p">......</span><span class="w">  </span><span class="p">..</span><span class="o">|</span>
+<span class="mo">00000020</span><span class="w">  </span><span class="mi">40</span><span class="w"> </span><span class="mi">31</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="n">ab</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mi">0</span><span class="n">e</span><span class="w"> </span><span class="mi">43</span><span class="w"> </span><span class="mi">45</span><span class="w">  </span><span class="mi">4</span><span class="n">e</span><span class="w"> </span><span class="mi">4</span><span class="n">e</span><span class="w"> </span><span class="mi">41</span><span class="w"> </span><span class="mi">48</span><span class="w"> </span><span class="mi">45</span><span class="w"> </span><span class="mi">68</span><span class="w"> </span><span class="mi">65</span><span class="w"> </span><span class="mi">46</span><span class="w">  </span><span class="o">|</span><span class="mf">@1.</span><span class="p">...</span><span class="n">CENNAHEheF</span><span class="o">|</span>
+<span class="mo">00000030</span><span class="w">  </span><span class="mi">62</span><span class="w"> </span><span class="mi">66</span><span class="w"> </span><span class="mi">4</span><span class="n">b</span><span class="w"> </span><span class="mi">49</span><span class="w"> </span><span class="mo">03</span><span class="w"> </span><span class="mf">8f</span><span class="w"> </span><span class="mi">8</span><span class="n">d</span><span class="w"> </span><span class="n">a3</span><span class="w">  </span><span class="mo">03</span><span class="w"> </span><span class="mf">8f</span><span class="w"> </span><span class="mi">8</span><span class="n">d</span><span class="w"> </span><span class="n">a3</span><span class="w"> </span><span class="mo">02</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mi">08</span><span class="w"> </span><span class="n">aa</span><span class="w">  </span><span class="o">|</span><span class="n">bfKI</span><span class="p">............</span><span class="o">|</span>
+<span class="mo">00000040</span><span class="w">  </span><span class="n">ba</span><span class="w"> </span><span class="n">b9</span><span class="w"> </span><span class="mi">9</span><span class="n">e</span><span class="w"> </span><span class="mi">40</span><span class="w"> </span><span class="n">b6</span><span class="w"> </span><span class="mi">9</span><span class="n">b</span><span class="w"> </span><span class="mi">99</span><span class="w"> </span><span class="mo">00</span><span class="w">  </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">01</span><span class="w">  </span><span class="o">|</span><span class="p">...@............</span><span class="o">|</span>
+<span class="mo">00000050</span><span class="w">  </span><span class="mi">0</span><span class="n">a</span><span class="w"> </span><span class="mi">49</span><span class="w"> </span><span class="mi">4</span><span class="n">d</span><span class="w"> </span><span class="mi">41</span><span class="w"> </span><span class="mf">4f</span><span class="w"> </span><span class="mi">40</span><span class="w"> </span><span class="mi">4</span><span class="n">e</span><span class="w"> </span><span class="mi">4</span><span class="n">e</span><span class="w">  </span><span class="mi">49</span><span class="w"> </span><span class="mi">48</span><span class="w"> </span><span class="mi">82</span><span class="w"> </span><span class="mi">08</span><span class="w"> </span><span class="n">aa</span><span class="w"> </span><span class="n">ba</span><span class="w"> </span><span class="n">b9</span><span class="w"> </span><span class="mi">9</span><span class="n">e</span><span class="w">  </span><span class="o">|</span><span class="p">.</span><span class="n">IMAO</span><span class="p">@</span><span class="n">NNIH</span><span class="p">......</span><span class="o">|</span>
+<span class="mo">00000060</span><span class="w">  </span><span class="mi">40</span><span class="w"> </span><span class="n">b6</span><span class="w"> </span><span class="mi">9</span><span class="n">b</span><span class="w"> </span><span class="mi">99</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mi">40</span><span class="w"> </span><span class="mi">31</span><span class="w"> </span><span class="mo">00</span><span class="w">  </span><span class="n">ab</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="n">b6</span><span class="w"> </span><span class="mi">84</span><span class="w"> </span><span class="n">a3</span><span class="w"> </span><span class="mi">66</span><span class="w"> </span><span class="mo">00</span><span class="w">  </span><span class="o">|</span><span class="p">@....</span><span class="mf">@1.</span><span class="p">......</span><span class="n">f</span><span class="p">.</span><span class="o">|</span>
+<span class="mo">00000070</span><span class="w">  </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="n">ff</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w">  </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">03</span><span class="w"> </span><span class="mf">8f</span><span class="w"> </span><span class="mi">8</span><span class="n">d</span><span class="w"> </span><span class="n">a3</span><span class="w">  </span><span class="o">|</span><span class="p">................</span><span class="o">|</span>
+<span class="mo">000000</span><span class="mi">80</span><span class="w">  </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w">  </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mi">40</span><span class="w"> </span><span class="mi">31</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="n">ab</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w">  </span><span class="o">|</span><span class="p">..........</span><span class="mf">@1.</span><span class="p">...</span><span class="o">|</span>
+<span class="mo">000000</span><span class="mi">90</span><span class="w">  </span><span class="n">b6</span><span class="w"> </span><span class="mi">84</span><span class="w"> </span><span class="n">a3</span><span class="w"> </span><span class="mi">66</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">00</span><span class="w">  </span><span class="n">ff</span><span class="w"> </span><span class="mo">06</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mi">14</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">05</span><span class="w"> </span><span class="mo">00</span><span class="w"> </span><span class="mo">01</span><span class="w">  </span><span class="o">|</span><span class="p">...</span><span class="n">f</span><span class="p">............</span><span class="o">|</span>
+</code></pre></div>
+
+<p>Without any information on the file, this stands as a wall full of
+random bytes. Although complex, there's a lot that can be deduced by
+looking for patterns. File formats are often divided in sections. The
+bytes may look random, but in reality, they ought to be very structured.
+The first step in dealing with this is to <strong>extract the structure</strong>.</p>
+<p>One trick I use is to zoom out on the hexdump. This isolates zeros and
+all other bytes.</p>
+<p>Here's an image of a hexdump of the same file, zoomed out:</p>
+<p><img alt="image" src="zoomed-out-vdb.png"></p>
+<p>Do you notice any patterns?</p>
+<p>There are alternating strips of dark and light patterns. The light
+patterns are just zeros and darker ones appear to be 'data'. Here's a
+highlighted image with the patterns. White rectangles represent dark
+parts and greens represent the zeros.</p>
+<p><img alt="image" src="zoomed-out-vdb-highlighted.png"></p>
+<p>Since this repeats it's likely encoding the same 'type' of
+information. The pattern starts with dark section followed by white and
+ends with a white section. They always come in a pair. So we can deduce
+that to represent one of this type of data, we need a dark part followed
+by the light part.</p>
+<p>Now, what could this be?</p>
+<p>This is a question that falls into the 'content' part. What we did
+above was the 'structure' part. As it turns out, getting meaning out
+of this is much more tedious.</p>
+<p>A <a href="https://en.wikipedia.org/wiki/Fuzzing">Fuzzer</a> is the right tool for
+this job. As fuzzers tend to be very special purpose, i wrote one for
+myself. Extracting the details with the fuzzer vindicates our suspicion.
+The dark and light parts are indeed part of the structure. The dark part
+is sort of a preamble to the light part. The light part is a port
+reference list for all the black-box module present in the netlist.</p>
+<p>That this pattern represents black-box modules can be deduced by
+counting the number of times this pattern is present, and what other
+thing is present as many times in the original source file from which
+this was generated. Inspecting the source, which is just a verilog file
+confirms that this are indeed the black-box modules.</p>
+<h2>Conclusion</h2>
+<p>In conclusion, file formats or any other type of data that are supposed
+to be regular can be brute-forced by our pattern-seeking brains to
+reveal their structures.</p>
+<p>PS: I'll write a full description of the fuzzer and document other
+details as this project progresses.</p>
+
+
+    </main>
+
+    <footer>
+      <p>This website was built with <a href="https://github.com/venthur/blag">blag</a>.
+      <br>
+      Subscribe to the <a href="/atom.xml">atom feed</a>.
+      <br>
+      © 2025, Shreeyash Pandey 
+      </p>
+    </footer>
+  </body>
+
+</html>

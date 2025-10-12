@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="Shreeyash Pandey">
+    <meta name="description" content="Shreeyash's Blog">
+    <link rel="alternate" href="/atom.xml" type="application/atom+xml">
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <title>Typo Correction in LLVM | Shreeyash's Blog</title>
+  </head>
+
+  <body>
+    <header>
+      <h1><a href="/">Thoughts, et cetera.</a></h1>
+      <nav>
+        <h2>Shreeyash's Blog</h2>
+        <ul>
+          <li><h2><a href="/">Blog</a></h2></li>
+          <li><h2><a href="/archive.html">Archive</a></h2></li>
+          <li><h2><a href="/tags/">Tags</a></h2></li>
+          <li><h2><a href="/links.html">Links</a></h2></li>
+          <li><h2><a href="/about.html">About Me</a></h2></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+    
+
+  
+  <h2>Typo Correction in LLVM</h2>
+  
+
+  <aside>
+    <p>published on 2025-09-07
+
+    
+    · tagged with
+      
+        <a href="/tags/compilers.html">#compilers</a> and 
+        <a href="/tags/llvm.html">#llvm</a>
+    
+    </p>
+  </aside>
+
+  <p>If you&rsquo;re in the business of writing code, you might have noticed that your
+compiler is capable of identifying and suggesting fixes for the typos in your
+programs.</p>
+<p>For example, take the following code:</p>
+<div class="codehilite"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">pacman</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">y</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">pamcan</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Compiling this generates an error identifying that <code>pamcan</code> is an undeclared
+identifier and a valid identifier by the name <code>pacman</code> is available</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>clang<span class="w"> </span>-c<span class="w"> </span>a.c<span class="w"> </span>-o<span class="w"> </span>a.o
+a.c:3:10:<span class="w"> </span>error:<span class="w"> </span>use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier<span class="w"> </span><span class="s1">&#39;pamcan&#39;</span><span class="p">;</span><span class="w"> </span>did<span class="w"> </span>you<span class="w"> </span>mean<span class="w"> </span><span class="s1">&#39;pacman&#39;</span>?
+<span class="w">    </span><span class="m">3</span><span class="w"> </span><span class="p">|</span><span class="w">   </span><span class="k">return</span><span class="w"> </span>pamcan<span class="p">;</span>
+<span class="w">      </span><span class="p">|</span><span class="w">          </span>^~~~~~
+<span class="w">      </span><span class="p">|</span><span class="w">          </span>pacman
+a.c:2:7:<span class="w"> </span>note:<span class="w"> </span><span class="s1">&#39;pacman&#39;</span><span class="w"> </span>declared<span class="w"> </span>here
+<span class="w">    </span><span class="m">2</span><span class="w"> </span><span class="p">|</span><span class="w">   </span>int<span class="w"> </span><span class="nv">pacman</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>x<span class="w"> </span>*<span class="w"> </span>y<span class="p">;</span>
+<span class="w">      </span><span class="p">|</span><span class="w">       </span>^
+<span class="m">1</span><span class="w"> </span>error<span class="w"> </span>generated.
+</code></pre></div>
+
+<p>We are interested in how the compiler figures out that <code>pacman</code> is a valid
+correction for our typo. This article explains how the compiler (clang, to be
+specific) does it.</p>
+<h2>Parsing and Semantic Analysis</h2>
+<p>This type of error is detected by the compiler&rsquo;s <a href="https://users.sussex.ac.uk/~mfb21/compilers/slides/6-handout.pdf"><strong>Semantic
+Analyzer</strong></a>,
+a component of the parser. In clang, the semantic analyzer is known as
+<a href="https://youtu.be/5kkMpJpIGYU?si=A_rhqKwLLspiG2Yd&amp;t=1366"><strong>Sema</strong></a></p>
+<p>Grepping for the diagnostic message &ldquo;use of undeclared identifier&rdquo; within the
+<a href="https://github.com/llvm/llvm-project/"><code>llvm-project</code></a> monorepo leads to the
+file <code>DiagnosticSemaKinds.td</code>. </p>
+<div class="codehilite"><pre><span></span><code>~/dev/llvm-project/clang<span class="w"> </span>$<span class="w"> </span>rg<span class="w"> </span><span class="s2">&quot;use of undeclared identifier&quot;</span><span class="w"> </span>-g<span class="w"> </span><span class="s1">&#39;!*test*&#39;</span><span class="w"> </span>-g<span class="w"> </span><span class="s1">&#39;!*docs*&#39;</span><span class="w"> </span>-g<span class="w"> </span><span class="s1">&#39;!*www*&#39;</span>
+include/clang/Basic/DiagnosticSemaKinds.td
+<span class="m">6111</span>:def<span class="w"> </span>err_undeclared_var_use<span class="w"> </span>:<span class="w"> </span>Error&lt;<span class="s2">&quot;use of undeclared identifier %0&quot;</span>&gt;<span class="p">;</span>
+<span class="m">6113</span>:<span class="w">  </span><span class="s2">&quot;use of undeclared identifier %0; &quot;</span>
+<span class="m">11285</span>:<span class="w">  </span><span class="s2">&quot;use of undeclared identifier %0; did you mean %1?&quot;</span>&gt;<span class="p">;</span>
+</code></pre></div>
+
+<p>This is a <a href="https://llvm.org/docs/TableGen/"><em>TableGen</em></a>  file, an abstraction
+used by LLVM to maintain information files. It is compiled into the
+<code>DiagnosticSemaKinds.inc</code> header file. The specific diagnostic is declared as
+the following and can be found in the build directory:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">DIAG</span><span class="p">(</span><span class="n">err_undeclared_var_use_suggest</span><span class="p">,</span><span class="w"> </span><span class="n">CLASS_ERROR</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">unsigned</span><span class="p">)</span><span class="n">diag</span><span class="p">::</span><span class="n">Severity</span><span class="p">::</span><span class="n">Error</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;use of undeclared identifier %0; did you mean %1?&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">SFINAE_SubstitutionFailure</span><span class="p">,</span><span class="w"> </span><span class="bp">false</span><span class="p">,</span><span class="w"> </span><span class="bp">true</span><span class="p">,</span><span class="w"> </span><span class="bp">true</span><span class="p">,</span><span class="w"> </span><span class="bp">false</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Now, we can begin our detective hunt for the part of code we&rsquo;re interested in.
+We&rsquo;ll use the trustworthy &lsquo;grep&rsquo; again to search for <code>err_undeclared_var_use</code>.</p>
+<p>We land on
+<a href="https://github.com/llvm/llvm-project/blob/e6c63d920dec3e8874ac1dc3c3f19fb822f0ab06/clang/lib/Sema/SemaExpr.cpp#L2513">Sema::DiagnoseEmptyLookup</a>,
+which uses the string we searched for. As the name suggests, this function
+figures out what to do when a symbol is not present in the symbol table. It
+first tries to check if this is an unqualified look up. If this fails, it tries
+to correct for a typo. This is the snippet where the decision is made:</p>
+<div class="codehilite"><pre><span></span><code><span class="w">  </span><span class="c1">// We didn&#39;t find anything, so try to correct for a typo.</span>
+<span class="w">  </span><span class="n">TypoCorrection</span><span class="w"> </span><span class="n">Corrected</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">S</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">Corrected</span><span class="w"> </span><span class="o">=</span>
+<span class="w">                </span><span class="n">CorrectTypo</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">getLookupNameInfo</span><span class="p">(),</span><span class="w"> </span><span class="n">R</span><span class="p">.</span><span class="n">getLookupKind</span><span class="p">(),</span><span class="w"> </span><span class="n">S</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">SS</span><span class="p">,</span>
+<span class="w">                            </span><span class="n">CCC</span><span class="p">,</span><span class="w"> </span><span class="n">CorrectTypoKind</span><span class="o">::</span><span class="n">ErrorRecovery</span><span class="p">,</span><span class="w"> </span><span class="n">LookupCtx</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">CorrectedStr</span><span class="p">(</span><span class="n">Corrected</span><span class="p">.</span><span class="n">getAsString</span><span class="p">(</span><span class="n">getLangOpts</span><span class="p">()));</span>
+<span class="w">    </span><span class="p">...</span>
+</code></pre></div>
+
+<p>It calls the function
+<a href="https://github.com/llvm/llvm-project/blob/be1e50f56af8e270a0396eef8f62626fbbb84996/clang/lib/Sema/SemaLookup.cpp#L5413">Sema::CorrectTypo</a>
+which mainly sets thresholds for what results are acceptable as corrections or
+fails otherwise. <code>CorrectTypo</code> calls
+<a href="https://github.com/llvm/llvm-project/blob/be1e50f56af8e270a0396eef8f62626fbbb84996/clang/lib/Sema/SemaLookup.cpp#L5269">Sema::makeTypoCorrectionConsumer</a>.
+<code>makeTypoCorrectionConsumer</code> iterates over available identifiers, calls
+<code>FoundName</code> which adds a name if its edit distance is less than a particular
+threshold. We ultimately land on the
+<a href="https://github.com/llvm/llvm-project/blob/be1e50f56af8e270a0396eef8f62626fbbb84996/llvm/include/llvm/ADT/edit_distance.h#L44C1-L103C2">ComputeMappedEditDistance</a>
+function, which is the meat and potato of this operation. </p>
+<p>Following text will be discussing this. </p>
+<h2>Levenshtein Distance</h2>
+<p>The <a href="https://en.wikipedia.org/wiki/Levenshtein_distance"><strong>Levenshtein
+Distance</strong></a>, or edit
+distance, quantifies the minimum number of single-character edits
+(insertions, deletions, or substitutions) required to change one string into
+another. LLVM implements a space-optimized, dynamic programming solution for
+this in the <code>ComputeMappedEditDistance</code> function.</p>
+<p>Here&rsquo;s an abridged but pure C++ implementation of the distance function implemented by LLVM:</p>
+<div class="codehilite"><pre><span></span><code><span class="kt">size_t</span><span class="w"> </span><span class="nf">edit_distance</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">s1</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">s2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s1</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s2</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">row</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">row</span><span class="p">.</span><span class="n">size</span><span class="p">();</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">row</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">m</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">row</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">best_this_row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">row</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">previous</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">cur_item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s1</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kt">int</span><span class="w"> </span><span class="n">old_row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">row</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+<span class="w">      </span><span class="n">row</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">min</span><span class="p">(</span><span class="n">previous</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">((</span><span class="n">cur_item</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">s2</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">0u</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">1u</span><span class="p">),</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">min</span><span class="p">(</span><span class="n">row</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">x</span><span class="mi">-1</span><span class="p">),</span><span class="w"> </span><span class="n">row</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">));</span>
+<span class="w">      </span><span class="n">previous</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">old_row</span><span class="p">;</span>
+<span class="w">      </span><span class="n">best_this_row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">min</span><span class="p">(</span><span class="n">best_this_row</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">x</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">row</span><span class="p">[</span><span class="n">n</span><span class="p">];</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">res</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>The algorithm can be understood by visualizing a 2D grid, <code>D</code>, where
+<code>D[i][j]</code> represents the Levenshtein distance between the first <code>i</code>
+characters of the first string and the first <code>j</code> characters of the second.
+The algorithm fills this table, and the final distance is the value in the
+bottom-right cell, <code>D[m][n]</code>.</p>
+<p>The code implements this by translating the recursive definition into an
+iterative process. It maintains only the current and previous rows of the
+conceptual table to save space.</p>
+<ul>
+<li>
+<p><strong>Base Cases:</strong> The costs for transforming an empty string into a prefix of
+  another string are represented by the first row and column of the table. In
+the code, this is handled by the initial loop that populates the <code>row</code> vector
+and the line <code>row.at(0) = y;</code> within the main loop.</p>
+</li>
+<li>
+<p><strong>Recursive Step:</strong> The calculation for <code>D[i][j]</code> is based on three smaller
+  subproblems: deletion, insertion, and substitution. The code calculates the
+value for <code>row.at(x)</code> (which corresponds to <code>D[i][j]</code>) by using values from
+the previous row (<code>previous</code> and <code>old_row</code>) and the current row
+(<code>row.at(x-1)</code>). This mirrors the recursive formula:</p>
+</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">min</span><span class="p">({</span><span class="n">deletion</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="n">insertion</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="n">substitution</span><span class="p">}).</span>
+</code></pre></div>
+
+<h2>Experiments with the Typo Correction System</h2>
+<p>Armed with the knowledge that suggestion for typo correction is based on
+distance between two words, there should be a threshold after which
+suggestions should be discarded. We can find the code for this in
+<code>Sema::CorrectTypo</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="w">  </span><span class="c1">// Make sure the best edit distance (prior to adding any namespace qualifiers)</span>
+<span class="w">  </span><span class="c1">// is not more that about a third of the length of the typo&#39;s identifier.</span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">ED</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Consumer</span><span class="o">-&gt;</span><span class="n">getBestEditDistance</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">TypoLen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Typo</span><span class="o">-&gt;</span><span class="n">getName</span><span class="p">().</span><span class="n">size</span><span class="p">();</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ED</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">TypoLen</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">ED</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">FailedCorrection</span><span class="p">(</span><span class="n">Typo</span><span class="p">,</span><span class="w"> </span><span class="n">TypoName</span><span class="p">.</span><span class="n">getLoc</span><span class="p">(),</span><span class="w"> </span><span class="n">RecordFailure</span><span class="p">);</span>
+
+<span class="w">  </span><span class="n">TypoCorrection</span><span class="w"> </span><span class="n">BestTC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Consumer</span><span class="o">-&gt;</span><span class="n">getNextCorrection</span><span class="p">();</span>
+<span class="w">  </span><span class="n">TypoCorrection</span><span class="w"> </span><span class="n">SecondBestTC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Consumer</span><span class="o">-&gt;</span><span class="n">getNextCorrection</span><span class="p">();</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">BestTC</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">FailedCorrection</span><span class="p">(</span><span class="n">Typo</span><span class="p">,</span><span class="w"> </span><span class="n">TypoName</span><span class="p">.</span><span class="n">getLoc</span><span class="p">(),</span><span class="w"> </span><span class="n">RecordFailure</span><span class="p">);</span>
+</code></pre></div>
+
+<p>If the best edit distance &ldquo;is not more than a third of the length of the
+typo&rsquo;s identifier&rdquo;, it&rsquo;ll move to the next correction. If there are no other
+corrections, it exits early. </p>
+<p>We can, in fact, trigger this by changing the variable name so that it&rsquo;s more
+than 1/3 of typo&rsquo;s length. We need atleast <code>TypoLen</code> of 6 and an edit distance <code>ED</code>
+of 2. </p>
+<p>Here&rsquo;s one example,</p>
+<div class="codehilite"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">pacman</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">pamcaa</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Compiling this results in,</p>
+<div class="codehilite"><pre><span></span><code>~/dev/llvm-project/build-clang<span class="w"> </span>$<span class="w"> </span>./bin/clang-22<span class="w"> </span>-c<span class="w"> </span>a.c<span class="w"> </span>-o<span class="w"> </span>a<span class="w"> </span>-target<span class="w"> </span>riscv64
+a.c:3:10:<span class="w"> </span>error:<span class="w"> </span>use<span class="w"> </span>of<span class="w"> </span>undeclared<span class="w"> </span>identifier<span class="w"> </span><span class="s1">&#39;pamcaa&#39;</span>
+<span class="w">    </span><span class="m">3</span><span class="w"> </span><span class="p">|</span><span class="w">   </span><span class="k">return</span><span class="w"> </span>pamcaa<span class="p">;</span>
+<span class="w">      </span><span class="p">|</span><span class="w">          </span>^~~~~~
+<span class="m">1</span><span class="w"> </span>error<span class="w"> </span>generated.
+</code></pre></div>
+
+<p>No suggestions for this one! As expected.</p>
+
+
+    </main>
+
+    <footer>
+      <p>This website was built with <a href="https://github.com/venthur/blag">blag</a>.
+      <br>
+      Subscribe to the <a href="/atom.xml">atom feed</a>.
+      <br>
+      © 2025, Shreeyash Pandey 
+      </p>
+    </footer>
+  </body>
+
+</html>

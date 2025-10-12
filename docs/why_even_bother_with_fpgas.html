@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="Shreeyash Pandey">
+    <meta name="description" content="Shreeyash's Blog">
+    <link rel="alternate" href="/atom.xml" type="application/atom+xml">
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <title>Why Even Bother With FPGAs? | Shreeyash's Blog</title>
+  </head>
+
+  <body>
+    <header>
+      <h1><a href="/">Thoughts, et cetera.</a></h1>
+      <nav>
+        <h2>Shreeyash's Blog</h2>
+        <ul>
+          <li><h2><a href="/">Blog</a></h2></li>
+          <li><h2><a href="/archive.html">Archive</a></h2></li>
+          <li><h2><a href="/tags/">Tags</a></h2></li>
+          <li><h2><a href="/links.html">Links</a></h2></li>
+          <li><h2><a href="/about.html">About Me</a></h2></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+    
+
+  
+  <h2>Why Even Bother With FPGAs?</h2>
+  
+
+  <aside>
+    <p>published on 2024-12-22
+
+    
+    · tagged with
+      
+        <a href="/tags/fpga.html">#fpga</a>
+    
+    </p>
+  </aside>
+
+  <h1>Why Even Bother With FPGAs?</h1>
+<p>FPGAs being alternative processors enjoy a fair bit of skepticism,
+especially from people higher up in the pyramid of computer abstractions
+(Software Engineers and the like). This post is my attempt at trying to
+persuade the skeptics by way of an instance where FPGAs blow every other
+kind of processor out of the water.</p>
+<p><strong>TLDR</strong>; FPGAs can allow full DNN inference at nanosecond latency only
+limited by the time it takes for electrons to move across a circuit. In
+comparison, CPU/GPUs may only be able to run a couple instructions in
+nanosecond timeframe, entire inference will require many million/billion
+of these instructions.</p>
+<h2>FPGAs for the Unenlightened</h2>
+<p>FPGAs are circuit emulators. Digital Circuits consists of logic gates
+and connections between them, FPGAs emulate logic gates and their
+connections.</p>
+<p>Logic gates can be represented by their <a href="https://en.wikipedia.org/wiki/Truth_table">Truth
+Table</a>. Truth tables are a
+form of hash table where the key is a tuple of binary values
+corresponding to each input and output is a single bit representing the
+output of the gate. One kind of FPGA (SRAM-based), emulate logic gates
+by storing truth tables in memory.</p>
+<p>Connections are emulated via Programmable Interconnects. Think of a
+network switch, programmable interconnects are pretty much like the same
+except on a very low-level. <a href="https://cse.usf.edu/~haozheng/teach/cda4253/doc/fpga-arch-overview.pdf">This
+document</a>
+explains in detail the different VLSI architectures present in modern
+FPGAs.</p>
+<p>A programmer usually does not describe circuits in the form of logic
+gates, they use abstractions in the form of HDLs to behaviorally
+describe operations that a circuit must perform. A compiler
+converts/maps HDL programs to FPGA primitives.</p>
+<p>As it should be obvious by now, FPGAs are unlike processors. They do not
+have any "Instruction Set Architecture". If there is a need, the
+programmer must design and implement an ISA[^1]. FPGAs require thinking
+of problems as circuits with inputs and outputs.</p>
+<h2>The Central Argument for FPGAs</h2>
+<p>Now, let's build the argument.</p>
+<p>Deep Neural Networks (DNN) inference on demands a lot of compute and is
+a pretty challenging problem. Solutions to this problem manifests in the
+form of ASIC accelerators and GPUs. More performance can always be
+brought by scaling said processors but of-course there is a limit to how
+far one can scale. For example, on the <a href="https://developer.nvidia.com/embedded/jetson-nano">NVIDIA Jetson
+Nano</a> the time taken
+to infer a single image for the CNN model ResNet50 is \~72ms. What if we
+needed something much faster, say the same inference in integral
+nanoseconds? GPUs/ASICs would only be able to execute a couple
+instructions in that timeframe let alone complete the inference.
+Certainly they won't suffice.</p>
+<p>This requirement is not made up. Nanosecond DNN inference is a real
+problem faced by a team at CERN working on the Large Hadron Collider.</p>
+<p>Here's a little description of the problem from their
+<a href="https://arxiv.org/pdf/2006.10159">paper</a>:</p>
+<blockquote>
+<p><em>The hardware triggering system in a particle detector at the CERN LHC
+is one of the most extreme environments one can imagine deploying
+DNNs. Latency is restricted to O(1)µs, governed by the frequency of
+particle collisions and the amount of on-detector buffers. The system
+consists of a limited amount of FPGA resources, all of which are
+located in underground caverns 50-100 meters below the ground surface,
+working on thousands of different tasks in parallel. Due to the high
+number of tasks being performed, limited cooling capabilities, limited
+space in the cavern, and the limited number of processors, algorithms
+must be kept as resource-economic as possible. In order to minimize
+the latency and maximize the precision of tasks that can be performed
+in the hardware trigger, ML solutions are being explored as fast
+approximations of the algorithms currently in use.</em></p>
+</blockquote>
+<h2>Solutions</h2>
+<p>There are, broadly speaking, two ways of solving this problem:</p>
+<h3>1. The ASIC Way</h3>
+<p>This includes CPUs/GPUs/TPUs or any other ASIC. The idea would be to to
+have a large grid of multipliers and adders to carry out as many
+multiply-accumulate operations in parallel. To achieve more performance,
+research would be put to increase the frequency of the chip (Moore's
+law). Compilers and specialized frameworks help abstract computation.
+And if, we need more performance, specialized engineers (who have
+mastered assembly language) are called upon to write performant kernels,
+making use of clever tricks to have the fastest possible dot product.</p>
+<h3>2. The FPGA way</h3>
+<p>Through this way, the idea is to exploit FPGA's programming model.
+Instead of writing a program for our problem, we design a circuit for
+it. Each layer of a neural network would be represented by a circuit.
+Inside the layer, all dot-products themselves are represented by a
+circuit. If the neural network is not prohibitively large, we can even
+fit the entire NN as a combinational circuit.</p>
+<p>As you might have learnt in your digital circuits course, combinational
+circuits do not contain any clocks i.e. there's no notion of frequency
+&mdash; inputs come in, outputs go out. The speed of computation is only
+bottleneck'ed by the time it takes electrons to pass in that chip. How
+cool is that?!</p>
+<h2>Flaws with the FPGA way</h2>
+<p>One of the biggest flaw with fitting entire problems on the FPGA is that
+of <a href="https://en.wikipedia.org/wiki/Combinatorial_explosion">combinatorial
+explosion</a> in
+complexity. For example, in order to design a circuit for a multiplier,
+there are <a href="https://en.wikipedia.org/wiki/Booth's_multiplication_algorithm">well known
+algorithms</a>
+that result in very efficient multiplier. One can avoid going this route
+by directly encoding the multipliers into truth-tables. Instead of
+calculating the outputs of a multiplication, we remember and look-it-up.
+Here's verilog for a 2-bit multiplication:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">mul</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="k">input</span><span class="w"> </span><span class="k">signed</span><span class="w"> </span><span class="p">[</span><span class="mh">1</span><span class="o">:</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="w"> </span><span class="k">signed</span><span class="w"> </span><span class="p">[</span><span class="mh">1</span><span class="o">:</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="k">output</span><span class="w"> </span><span class="k">signed</span><span class="w"> </span><span class="p">[</span><span class="mh">3</span><span class="o">:</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="n">out</span><span class="p">);</span>
+<span class="w"> </span><span class="k">assign</span><span class="w"> </span><span class="n">out</span><span class="p">[</span><span class="mh">3</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">a</span><span class="p">[</span><span class="mh">1</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="mh">1</span><span class="p">]);</span>
+<span class="w"> </span><span class="k">assign</span><span class="w"> </span><span class="n">out</span><span class="p">[</span><span class="mh">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="o">~</span><span class="n">a</span><span class="p">[</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">a</span><span class="p">[</span><span class="mh">1</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="mh">1</span><span class="p">])</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mh">1</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">~</span><span class="n">b</span><span class="p">[</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="mh">1</span><span class="p">]);</span>
+<span class="w"> </span><span class="k">assign</span><span class="w"> </span><span class="n">out</span><span class="p">[</span><span class="mh">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="o">~</span><span class="n">a</span><span class="p">[</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">a</span><span class="p">[</span><span class="mh">1</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="mh">0</span><span class="p">])</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">~</span><span class="n">b</span><span class="p">[</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="mh">1</span><span class="p">])</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">~</span><span class="n">a</span><span class="p">[</span><span class="mh">1</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="mh">1</span><span class="p">]);</span>
+<span class="w"> </span><span class="k">assign</span><span class="w"> </span><span class="n">out</span><span class="p">[</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mh">0</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">[</span><span class="mh">0</span><span class="p">]);</span>
+<span class="k">endmodule</span>
+</code></pre></div>
+
+<p>Each output is just a combination of its inputs.</p>
+<p>Here's the problem: this method of designing multipliers does not
+scale! The 2bit multiplier takes 4 LUTs (pretty reasonable). But the
+same for an 8bit multiplier takes \~18,000 LUTs and 3+ hrs to synthesize
+(awful). The increase is at the rate of 2\^n. Many large neural networks
+will have a hard time to fit on the FPGA in this way.</p>
+<p>This doesn&rsquo;t signal the end for FPGAs, however. There&rsquo;s still a strong
+case to be made for their use&mdash;just as the team at CERN has
+demonstrated. In fact, they are actively leveraging this potential. They
+discovered that neural network layers can be <em>heterogeneously quantized</em>
+&mdash; meaning each layer can have a different precision level depending on
+its significance in the computation pipeline, as outlined in their work
+<a href="https://fastmachinelearning.org/hls4ml/">here</a></p>
+<p>If an entire network cannot fit on an FPGA, fast reconfiguration can
+provide a solution. This involves configuring the hardware for one
+layer, processing its outputs, then reconfiguring the hardware for the
+next layer, and so on. The approach can be further refined to enable
+reconfiguration at a per-channel level, allowing smaller FPGAs with
+limited resources to participate. A 'compiler' would orchestrate the
+computation offline, determining the sequence and timing of
+reconfigurations before the actual computation begins.</p>
+<p>Recent interest in hyper-quantization i.e.
+<a href="https://github.com/kyegomez/BitNet">1bit</a>, 2bit, 3bit ... networks is
+a big win for the FPGA way. The lower the resolution, the more efficient
+and practical the solution becomes, making FPGAs a great fit for this
+approach.</p>
+<h2>Conclusion</h2>
+<p>With the FPGA way, many problems spanning different domains can be
+solved in interesting and (sometimes) superior ways. At my workplace,
+we've started research in the FPGA way, trying to bring it out of the
+depths of complexities and solve practical problems.</p>
+<p>The intention of this post is not to compare ASICs and FPGAs
+(comparisons are futile), but to highlight how FPGAs ought to be seen
+and used. In the following few months, i'll write more on this research
+as I uncover it myself. I'll leave you with some links advocating for
+the FPGA way[^2]</p>
+<ul>
+<li><a href="https://proceedings.mlr.press/v80/chatterjee18a/chatterjee18a.pdf">Learning and Memorization - Satrajit
+  Chatterjee</a></li>
+<li><a href="https://arxiv.org/abs/1904.00938">LUTnet</a></li>
+<li><a href="https://scholar.google.com/citations?user=NTn1NJAAAAAJ&amp;hl=en">George Constantinides and his
+  team</a></li>
+<li><a href="https://fastmachinelearning.org/hls4ml/">hls4ml team</a></li>
+</ul>
+<p><strong>Footnotes</strong></p>
+<p>[^1]: The term "architecture" is a bit overloaded. The first meaning
+    is of the VLSI sense i.e. how LUTs and interconnect are organized to
+    make the FPGA. Another usage is for describing what all higher level
+    components are being designed <strong>on top</strong> of the FPGA. Think matmul
+    engines, caches etc. "Architecture" has meaning on different
+    levels of circuit design.</p>
+<p>[^2]: The is a term i've coined myself. I've not seen anyone else use
+    it in their works.</p>
+
+
+    </main>
+
+    <footer>
+      <p>This website was built with <a href="https://github.com/venthur/blag">blag</a>.
+      <br>
+      Subscribe to the <a href="/atom.xml">atom feed</a>.
+      <br>
+      © 2025, Shreeyash Pandey 
+      </p>
+    </footer>
+  </body>
+
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="Shreeyash Pandey">
+    <meta name="description" content="Shreeyash's Blog">
+    <link rel="alternate" href="/atom.xml" type="application/atom+xml">
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <title> | Shreeyash's Blog</title>
+  </head>
+
+  <body>
+    <header>
+      <h1><a href="/">Thoughts, et cetera.</a></h1>
+      <nav>
+        <h2>Shreeyash's Blog</h2>
+        <ul>
+          <li><h2><a href="/">Blog</a></h2></li>
+          <li><h2><a href="/archive.html">Archive</a></h2></li>
+          <li><h2><a href="/tags/">Tags</a></h2></li>
+          <li><h2><a href="/links.html">Links</a></h2></li>
+          <li><h2><a href="/about.html">About Me</a></h2></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+    
+
+  <h1>Optimizing ONNX QuantizeLinear with ARM NEON {#onnx_quantizelinear_neon}</h1>
+<p>Quantization is one of the most crucial step in ML inference on
+resource-constrained edge devices hence the need for it to be
+performant. On ARM SoCs, SIMD Extensions in the form of NEON can be used
+to achieve this goal. This article underlines how quantization can be
+implemented usign NEON extensions.</p>
+<h2>ONNX QuantizeLinear</h2>
+<p>Following image shows the first layer of <a href="https://arxiv.org/abs/1801.04381">mobilenet
+v2</a> image classification network. The
+first operator (QuantizeLinear) is there to quantize the input image
+(which is usually is usually in the form of normalized float32 values
+b/w 0 and 1), into int8 so it can be fed to the following QLinearConv.
+QLinearConv is the quantized version of a regular convolution.
+QLinearConv can be dealt, in some other blog, this ones about
+QuantizeLinear.</p>
+<p>\&lt;image&gt;</p>
+<p>At its core, QuantizeLinear is an elementwise operation, that performs
+the following transformation on each element:</p>
+<p>$$Y = saturate(round(X / scale) + zero_point)$$</p>
+<p>Where:</p>
+<ul>
+<li>$X$ is the floating-point input tensor.</li>
+<li>$scale$ is the quantization scale.</li>
+<li>$zero_point$ is the quantization zero point.</li>
+<li>$round$ typically refers to rounding to the nearest even.</li>
+<li>$saturate$ ensures the result fits within the target integer range
+  (e.g., [0, 255] for <code>uint8</code> or [-128,127] for <code>int8</code>).</li>
+</ul>
+<p>Here's a snippet of C++ code implementing QuantizeLinear:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">#include</span><span class="w"> </span><span class="o">&lt;</span><span class="n">algorithm</span><span class="o">&gt;</span>
+<span class="n">#include</span><span class="w"> </span><span class="o">&lt;</span><span class="nc">numeric</span><span class="o">&gt;</span>
+<span class="n">#include</span><span class="w"> </span><span class="o">&lt;</span><span class="n">vector</span><span class="o">&gt;</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">inputT</span><span class="p">,</span><span class="w"> </span><span class="n">typename</span><span class="w"> </span><span class="n">outputT</span><span class="o">&gt;</span>
+<span class="n">outputT</span><span class="w"> </span><span class="n">qfn</span><span class="p">(</span><span class="n">inputT</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="nc">float</span><span class="w"> </span><span class="n">scale</span><span class="p">,</span><span class="w"> </span><span class="nc">int</span><span class="w"> </span><span class="n">zero_point</span><span class="p">,</span><span class="w"> </span><span class="nc">int</span><span class="w"> </span><span class="n">min_lim</span><span class="p">,</span><span class="w"> </span><span class="nc">int</span><span class="w"> </span><span class="n">max_lim</span><span class="p">)</span><span class="w"> </span><span class="err">{</span>
+<span class="w">  </span><span class="n">inputT</span><span class="w"> </span><span class="n">rounded</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">std</span><span class="p">:</span><span class="err">:</span><span class="nf">round</span><span class="p">((</span><span class="n">static_cast</span><span class="o">&lt;</span><span class="nc">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">scale</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">zero_point</span><span class="p">));</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">static_cast</span><span class="o">&lt;</span><span class="n">outputT</span><span class="o">&gt;</span><span class="p">(</span><span class="nl">std</span><span class="p">:</span><span class="err">:</span><span class="n">clamp</span><span class="o">&lt;</span><span class="n">inputT</span><span class="o">&gt;</span><span class="p">(</span><span class="n">rounded</span><span class="p">,</span><span class="w"> </span><span class="n">min_lim</span><span class="p">,</span><span class="w"> </span><span class="n">max_lim</span><span class="p">));</span>
+<span class="err">}</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">inputT</span><span class="p">,</span><span class="w"> </span><span class="n">typename</span><span class="w"> </span><span class="n">outputT</span><span class="o">&gt;</span>
+<span class="nl">std</span><span class="p">:</span><span class="err">:</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">outputT</span><span class="o">&gt;</span><span class="w"> </span><span class="n">quantize_cpu</span><span class="p">(</span><span class="n">const</span><span class="w"> </span><span class="nl">std</span><span class="p">:</span><span class="err">:</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">inputT</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="ow">in</span><span class="p">)</span><span class="w"> </span><span class="err">{</span>
+<span class="w">  </span><span class="nc">float</span><span class="w"> </span><span class="n">scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.234</span><span class="p">;</span>
+<span class="w">  </span><span class="nc">int</span><span class="w"> </span><span class="n">min_lim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">128</span><span class="p">;</span>
+<span class="w">  </span><span class="nc">int</span><span class="w"> </span><span class="n">max_lim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">127</span><span class="p">;</span>
+<span class="w">  </span><span class="nc">int</span><span class="w"> </span><span class="n">zp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="nl">std</span><span class="p">:</span><span class="err">:</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">outputT</span><span class="o">&gt;</span><span class="w"> </span><span class="n">ret</span><span class="p">(</span><span class="ow">in</span><span class="p">.</span><span class="k">size</span><span class="p">());</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="nc">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="ow">in</span><span class="p">.</span><span class="k">size</span><span class="p">();</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="err">{</span>
+<span class="w">    </span><span class="n">ret</span><span class="p">.</span><span class="k">at</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">qfn</span><span class="o">&lt;</span><span class="n">inputT</span><span class="p">,</span><span class="w"> </span><span class="n">outputT</span><span class="o">&gt;</span><span class="p">(</span><span class="ow">in</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">scale</span><span class="p">,</span><span class="w"> </span><span class="n">zp</span><span class="p">,</span><span class="w"> </span><span class="n">min_lim</span><span class="p">,</span><span class="w"> </span><span class="n">max_lim</span><span class="p">);</span>
+<span class="w">  </span><span class="err">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span>
+<span class="err">}</span>
+</code></pre></div>
+
+<p>Code above is a simple linear iteration of the input and application of
+[qfn]{.title-ref} function which calculates the quantized output values.</p>
+<p>Let's benchmark this code:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">template</span><span class="w"> </span><span class="p">&lt;</span><span class="nx">typename</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">std</span><span class="o">::</span><span class="nx">chrono</span><span class="o">::</span><span class="nx">seconds</span><span class="p">&gt;</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nx">Timer</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">using</span><span class="w"> </span><span class="nx">Tp</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">std</span><span class="o">::</span><span class="nx">chrono</span><span class="o">::</span><span class="nx">time_point</span><span class="p">&lt;</span><span class="nx">std</span><span class="o">::</span><span class="nx">chrono</span><span class="o">::</span><span class="nx">high_resolution_clock</span><span class="p">&gt;;</span>
+<span class="w">  </span><span class="nx">Tp</span><span class="w"> </span><span class="nx">m_start</span><span class="p">;</span>
+<span class="w">  </span><span class="nx">Tp</span><span class="w"> </span><span class="nx">m_stop</span><span class="p">;</span>
+
+<span class="nx">public</span><span class="p">:</span>
+<span class="w">  </span><span class="nx">void</span><span class="w"> </span><span class="nx">start</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">m_start</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">std</span><span class="o">::</span><span class="nx">chrono</span><span class="o">::</span><span class="nx">high_resolution_clock</span><span class="o">::</span><span class="nx">now</span><span class="p">();</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="nx">void</span><span class="w"> </span><span class="nx">stop</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">m_stop</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">std</span><span class="o">::</span><span class="nx">chrono</span><span class="o">::</span><span class="nx">high_resolution_clock</span><span class="o">::</span><span class="nx">now</span><span class="p">();</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nx">T</span><span class="w"> </span><span class="nx">difference</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">std</span><span class="o">::</span><span class="nx">chrono</span><span class="o">::</span><span class="nx">duration_cast</span><span class="p">&lt;</span><span class="nx">T</span><span class="p">&gt;(</span><span class="nx">m_stop</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">m_start</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="nx">void</span><span class="w"> </span><span class="nx">report</span><span class="p">(</span><span class="nx">std</span><span class="o">::</span><span class="kt">string</span><span class="w"> </span><span class="nx">msg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">std</span><span class="o">::</span><span class="nx">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="nx">msg</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="nx">difference</span><span class="p">().</span><span class="nx">count</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+
+
+<span class="nx">int</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">std</span><span class="o">::</span><span class="nx">vector</span><span class="p">&lt;</span><span class="nx">float</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">v</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="mi">224</span><span class="o">*</span><span class="mi">224</span><span class="p">);</span>
+<span class="w">  </span><span class="nx">std</span><span class="o">::</span><span class="nx">iota</span><span class="p">(</span><span class="nx">v</span><span class="p">.</span><span class="nx">begin</span><span class="p">(),</span><span class="w"> </span><span class="nx">v</span><span class="p">.</span><span class="nx">end</span><span class="p">(),</span><span class="w"> </span><span class="o">-</span><span class="mi">400</span><span class="p">);</span>
+<span class="w">  </span><span class="nx">Timer</span><span class="p">&lt;</span><span class="nx">std</span><span class="o">::</span><span class="nx">chrono</span><span class="o">::</span><span class="nx">microseconds</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">tt</span><span class="p">;</span>
+<span class="w">  </span><span class="nx">tt</span><span class="p">.</span><span class="nx">start</span><span class="p">();</span>
+<span class="w">  </span><span class="kt">auto</span><span class="w"> </span><span class="nx">r2</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">quantize_cpu</span><span class="p">&lt;</span><span class="nx">float</span><span class="p">,</span><span class="w"> </span><span class="nx">float</span><span class="p">&gt;(</span><span class="nx">v</span><span class="p">);</span>
+<span class="w">  </span><span class="nx">tt</span><span class="p">.</span><span class="nx">stop</span><span class="p">();</span>
+<span class="w">  </span><span class="nx">tt</span><span class="p">.</span><span class="nx">report</span><span class="p">(</span><span class="s">&quot;time &quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>g++<span class="w"> </span>a.cpp<span class="w"> </span>-o<span class="w"> </span>a
+$<span class="w"> </span>./a
+<span class="nb">time</span><span class="w"> </span><span class="m">23943</span>
+</code></pre></div>
+
+<h2>Dive into ARM NEON Intrinsics</h2>
+<p>ARM NEON is a 128-bit SIMD (Single Instruction, Multiple Data)
+architecture extension for ARM Cortex-A series processors. It provides a
+set of registers and instructions capable of performing parallel
+operations on multiple data elements simultaneously. This parallelism is
+ideal for accelerating array-based computations common in deep learning,
+including the element-wise operations involved in <code>QuantizeLinear</code>.</p>
+<p>NEON intrinsics are C/C++ functions that map directly to NEON assembly
+instructions. They allow developers to leverage the NEON hardware
+without writing assembly code, providing a balance between performance
+and development ease. Key NEON intrinsics relevant to <code>QuantizeLinear</code>
+include:</p>
+<ul>
+<li><strong>Load/Store intrinsics (e.g., ``vld1q_f32``, ``vst1q_u8``):</strong>
+  For efficient loading of floating-point data into NEON registers and
+  storing of quantized integer results.</li>
+<li><strong>Vector arithmetic intrinsics (e.g., ``vmulq_f32``,
+  ``vaddq_f32``, ``vrecpeq_f32`` for reciprocal estimation):</strong>
+  For performing the division, addition, and scaling operations in
+  parallel on multiple floating-point values.</li>
+<li><strong>Conversion intrinsics (e.g., ``vcvtq_s32_f32``,
+  ``vqmovn_s32``):</strong> For converting floating-point numbers to
+  integers and performing saturating narrow operations to fit the target
+  integer type.</li>
+<li><strong>Rounding intrinsics (e.g., ``vrndnq_f32``):</strong> For implementing
+  the rounding behavior specified by ONNX.</li>
+<li><strong>Saturating intrinsics (e.g., ``vqadd_s8``, ``vqsub_s8``):</strong>
+  For handling saturation when converting to lower precision integer
+  types. While direct saturating conversions are often handled by
+  <code>vqmovn</code>, explicit saturation intrinsics might be needed depending on
+  the intermediate steps.</li>
+</ul>
+<p>By processing multiple data points within a single instruction cycle,
+NEON intrinsics significantly reduce the number of CPU cycles required
+for the <code>QuantizeLinear</code> computation, leading to substantial speedups.</p>
+<h2>3. Speed Measurements: QuantizeLinear with NEON vs. Scalar CPU</h2>
+<p>To quantify the performance gains, benchmarks were conducted comparing a
+scalar C++ implementation of <code>QuantizeLinear</code> against an ARM
+NEON-optimized version. The tests involved processing various input
+tensor sizes, simulating typical activation dimensions in neural
+networks.</p>
+<p>[Insert actual benchmark results here. This section should include:]</p>
+<ul>
+<li><strong>Methodology:</strong> Describe the test setup, including the ARM processor
+  used (e.g., Cortex-A53, Cortex-A72), compiler flags, and how timings
+  were collected. Specify the input tensor dimensions and data types.</li>
+<li><strong>Data Presentation:</strong> Present the speedup results clearly. This could
+  be in the form of a table showing execution times for scalar and NEON
+  implementations, or a graph illustrating the speedup factor across
+  different input sizes.</li>
+<li><strong>Example Table:</strong></li>
+</ul>
+<p>+------------------+-----------------+-----------------+-----------------+-----------------+
+| &gt; Input Size (Elements)\| Scalar CPU Time (ms)\| NEON Time (ms)\| Speedup Factor         |
+|                                                                                          |
+| =====================+====================+==============+================+              |
+|                                                                                          |
+| :   1024 \| X.XX \| Y.YY \| Z.Z \|                                                       |
++------------------+-----------------+-----------------+-----------------+-----------------+
+| 4096             | A.AA            | B.BB            | C.C             |                 |
++------------------+-----------------+-----------------+-----------------+-----------------+
+| 16384            | D.DD            | E.EE            | F.F             |                 |
++------------------+-----------------+-----------------+-----------------+-----------------+</p>
+<ul>
+<li><strong>Discussion of Results:</strong> Analyze the results. Highlight the
+  magnitude of the speedup and discuss how NEON's SIMD capabilities
+  contribute to this performance improvement. Emphasize the benefit for
+  larger tensor sizes where the overhead of scalar processing becomes
+  more pronounced.</li>
+</ul>
+<h2>4. Conclusion</h2>
+<p>Optimizing the <code>QuantizeLinear</code> operator with ARM NEON intrinsics
+delivers a critical performance boost for ONNX models on ARM-based
+systems. By leveraging the parallel processing capabilities of NEON, the
+initial quantization step, often a bottleneck, becomes significantly
+more efficient. This optimization ensures that the data is prepared
+rapidly for subsequent accelerated operations on hardware like FPGAs,
+enabling a truly efficient end-to-end deep learning inference pipeline
+on edge devices. The demonstrated speed improvements underscore the
+importance of low-level optimization for maximizing the performance of
+AI applications in embedded environments.</p>
+
+
+    </main>
+
+    <footer>
+      <p>This website was built with <a href="https://github.com/venthur/blag">blag</a>.
+      <br>
+      Subscribe to the <a href="/atom.xml">atom feed</a>.
+      <br>
+      © 2025, Shreeyash Pandey 
+      </p>
+    </footer>
+  </body>
+
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="Shreeyash Pandey">
+    <meta name="description" content="Shreeyash's Blog">
+    <link rel="alternate" href="/atom.xml" type="application/atom+xml">
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <title>How to remove a vertex from a boost graph? | Shreeyash's Blog</title>
+  </head>
+
+  <body>
+    <header>
+      <h1><a href="/">Thoughts, et cetera.</a></h1>
+      <nav>
+        <h2>Shreeyash's Blog</h2>
+        <ul>
+          <li><h2><a href="/">Blog</a></h2></li>
+          <li><h2><a href="/archive.html">Archive</a></h2></li>
+          <li><h2><a href="/tags/">Tags</a></h2></li>
+          <li><h2><a href="/links.html">Links</a></h2></li>
+          <li><h2><a href="/about.html">About Me</a></h2></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+    
+
+  
+  <h2>How to remove a vertex from a boost graph?</h2>
+  
+
+  <aside>
+    <p>published on 2024-05-04
+
+    
+    · tagged with
+      
+        <a href="/tags/cpp.html">#cpp</a>
+    
+    </p>
+  </aside>
+
+  <h1>How to remove a vertex from a boost graph?</h1>
+<p>Here&rsquo;s the code to remove a vertex from a boost graph:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;boost/graph/adjacency_list.hpp&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;boost/graph/graph_traits.hpp&gt;</span>
+
+<span class="n">using</span><span class="w"> </span><span class="n">Graph</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">adjacency_list</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">vecS</span><span class="p">,</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">listS</span><span class="p">,</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">directedS</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="n">using</span><span class="w"> </span><span class="n">Vertex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">graph_traits</span><span class="o">&lt;</span><span class="n">Graph</span><span class="o">&gt;::</span><span class="n">vertex_descriptor</span><span class="p">;</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">safe_remove_vertex</span><span class="p">(</span><span class="n">Vertex</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">Graph</span><span class="w"> </span><span class="o">&amp;</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">   </span><span class="n">boost</span><span class="o">::</span><span class="n">clear_vertex</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="w">   </span><span class="n">boost</span><span class="o">::</span><span class="n">remove_vertex</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2>Explanation</h2>
+<p><code>boost::clear_vertex</code> removes all the edges coming-in or going-out of the vertex.  <code>boost::remove_vertex</code> removes the
+vertex. This two step procedure is very similar to <a href="https://en.wikipedia.org/wiki/Erase%E2%80%93remove_idiom">erase-remove
+idiom</a> as used on <code>std::vectors</code>.</p>
+<p>Note if the template parameter <code>VertexList</code> (second template argument to boost::adjacency_list definition) is <code>vecS</code>
+i.e.  the vertices of a bgl are stored internally in a graph, calling <code>remove_vertex</code> on this graph invalidates all
+iterators to it as all the elements need to be re-arranged inside the vector. Using invalid iterators will likely cause
+a segfault. On the other hand, if <code>VertexList</code> is <code>listS</code> you&rsquo;re safe, as no iterators are invalidated. For more
+information, <a href="https://www.boost.org/doc/libs/1_85_0/libs/graph/doc/adjacency_list.html">refer to the original doc</a></p>
+<h2>Extended Example</h2>
+<p>For my use case I had a directed graph representing an onnx graph that i had to compile into a lower-level IR for my
+compiler. This translation required vertex elimination followed by patching the graph. The clear-remove pattern only
+removes a vertex and its edges but does not connect the parent nodes of the node under removal to its children.
+Ofcourse, there is no such notion of a parent or a child node in a graph. This has to be implemented by the user. The
+diagram below demostrates what the code following it does.</p>
+<p><img alt="image" src="graph-node-removal.png"></p>
+<p>Node 3 is the one being removed, red dashed edges are the new ones after 3 is removed. Here&rsquo;s the code:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;boost/graph/adjacency_list.hpp&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;boost/graph/graph_traits.hpp&gt;</span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">Graph</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">adjacency_list</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">vecS</span><span class="p">,</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">listS</span><span class="p">,</span>
+<span class="n">boost</span><span class="o">::</span><span class="n">bidirectionalS</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span><span class="w"> </span><span class="n">Vertex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">graph_traits</span><span class="o">&lt;</span><span class="n">Graph</span><span class="o">&gt;::</span><span class="n">vertex_descriptor</span><span class="p">;</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Vertex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">get_parents</span><span class="p">(</span><span class="n">Vertex</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">Graph</span><span class="w"> </span><span class="o">&amp;</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Vertex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">edges</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">in_edges</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">itr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">edges</span><span class="p">.</span><span class="n">first</span><span class="p">;</span><span class="w"> </span><span class="n">itr</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">edges</span><span class="p">.</span><span class="n">second</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">itr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">Vertex</span><span class="w"> </span><span class="n">src_v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">source</span><span class="p">(</span><span class="o">*</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="w">    </span><span class="n">ret</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">src_v</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Vertex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">get_children</span><span class="p">(</span><span class="n">Vertex</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">Graph</span><span class="w"> </span><span class="o">&amp;</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Vertex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">edges</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">out_edges</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">itr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">edges</span><span class="p">.</span><span class="n">first</span><span class="p">;</span><span class="w"> </span><span class="n">itr</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">edges</span><span class="p">.</span><span class="n">second</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">itr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">Vertex</span><span class="w"> </span><span class="n">src_v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">target</span><span class="p">(</span><span class="o">*</span><span class="n">itr</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="w">    </span><span class="n">ret</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">src_v</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">connect_parents_to_children</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Vertex</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">parents</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Vertex</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">children</span><span class="p">,</span><span class="w"> </span><span class="n">Graph</span><span class="w"> </span><span class="o">&amp;</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Vertex</span><span class="w"> </span><span class="n">i</span><span class="o">:</span><span class="w"> </span><span class="n">parents</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Vertex</span><span class="w"> </span><span class="n">j</span><span class="o">:</span><span class="w"> </span><span class="n">children</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;connecting &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">g</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">name</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; to &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">g</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">name</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+<span class="w">      </span><span class="n">boost</span><span class="o">::</span><span class="n">add_edge</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="cm">/* remove a vertex but connect its parents to its children */</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">safe_remove_vertex</span><span class="p">(</span><span class="n">Vertex</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">Graph</span><span class="w"> </span><span class="o">&amp;</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Vertex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">src_vertices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_parents</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Vertex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">dest_vertices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_children</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="w">  </span><span class="n">connect_parents_to_children</span><span class="p">(</span><span class="n">src_vertices</span><span class="p">,</span><span class="w"> </span><span class="n">dest_vertices</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="w">  </span><span class="n">boost</span><span class="o">::</span><span class="n">clear_vertex</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="w">  </span><span class="n">boost</span><span class="o">::</span><span class="n">remove_vertex</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">pass</span><span class="p">(</span><span class="n">Graph</span><span class="w"> </span><span class="n">graph</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">VertexIterator</span><span class="w"> </span><span class="n">vi</span><span class="p">,</span><span class="w"> </span><span class="n">vi_end</span><span class="p">,</span><span class="w"> </span><span class="n">next</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">tie</span><span class="p">(</span><span class="n">vi</span><span class="p">,</span><span class="w"> </span><span class="n">vi_end</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">boost</span><span class="o">::</span><span class="n">vertices</span><span class="p">(</span><span class="n">graph</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vi</span><span class="p">;</span><span class="w"> </span><span class="n">vi</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">vi_end</span><span class="p">;</span><span class="w"> </span><span class="n">vi</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">next</span><span class="p">,</span><span class="w"> </span><span class="n">cnt</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">next</span><span class="o">++</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">should_remove</span><span class="p">(</span><span class="o">*</span><span class="n">vi</span><span class="p">,</span><span class="w"> </span><span class="n">graph</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">safe_remove_vertex</span><span class="p">(</span><span class="o">*</span><span class="n">vi</span><span class="p">,</span><span class="w"> </span><span class="n">graph</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>PS: although its supposed to be a directed graph, i&rsquo;ve used bi-directional as i sometimes require backwards iteration
+through it.</p>
+
+
+    </main>
+
+    <footer>
+      <p>This website was built with <a href="https://github.com/venthur/blag">blag</a>.
+      <br>
+      Subscribe to the <a href="/atom.xml">atom feed</a>.
+      <br>
+      © 2025, Shreeyash Pandey 
+      </p>
+    </footer>
+  </body>
+
+</html>
