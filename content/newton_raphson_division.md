@@ -1,5 +1,5 @@
 Title: Faster Division With Newton-Raphson Approximation
-Date: 2025-10-04
+Date: 2025-10-13
 Tags: cs
 
 Many devices, especially embedded (micro-controllers and the like) do not come
