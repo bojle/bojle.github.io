@@ -2,8 +2,8 @@ Title: Faster Division With Newton-Raphson Approximation
 Date: 2025-10-04
 Tags: cs
 
-Many devices, especially embedded devices (micro-controllers and the like) do
-not come with an [FPU](https://en.wikipedia.org/wiki/Floating-point_unit) and
+Many devices, especially embedded (micro-controllers and the like) do not come
+with an [FPU](https://en.wikipedia.org/wiki/Floating-point_unit) and the
 circuitry required for carrying out integer division. In such a case, one looks
 towards methods of approximating the results of division and storing them in
 [Fixed Point](https://en.wikipedia.org/wiki/Fixed-point_arithmetic) format.
@@ -20,17 +20,19 @@ that order.
 
 The problem at hand is that of division:
 
-```
-C = N/D
-```
+$$
+C = \frac{N}{D}
+$$
+
 The first step to solving this is to split the problem in two: Reciprocal
 calculation, followed by multiplication. This is what it looks like:
 
-```
-C = N * (1/D)
-```
+$$
+C = N \cdot \left(\frac{1}{D}\right)
+$$
+
 It is assumed that the device has a fast multiplication hardware (which is
-mostly the case). Thus, multiplication can be carried out by the good old `mul`
+mostly the case). Thus, multiplication can be carried out by the good ol' `mul`
 instruction. Now for the most tricky part - calculating the reciprocal - which
 is a division operation!
 
@@ -42,8 +44,8 @@ epoch](https://en.wikipedia.org/wiki/Unix_time).
 
 The [Wikipedia
 article](https://en.wikipedia.org/wiki/Division_algorithm#Newton%E2%80%93Raphson_division)
-suffiecienty describes *what* and *how* of the NR Method. I'll summarize and add some
-missing context to make it digestable. 
+sufficiently describes *what* and *how* of the NR Method. I'll summarize and add some
+missing context.
 
 "[Newton's Method](https://en.wikipedia.org/wiki/Newton%27s_method) is a
 root-finding algorithm which produces successively better approximations to the
@@ -51,157 +53,169 @@ roots (or zeroes) of a real-valued function." This is the generic iterative
 equation according to Newton's method:
 
 
-<h3 align="center">
-<math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mi>x</mi><mrow><mn>1</mn><mo>&#xA0;</mo></mrow></msub><mo>=</mo><mo>&#xA0;</mo><msub><mi>x</mi><mrow><mn>0</mn><mo>&#xA0;</mo></mrow></msub><mo>-</mo><mo>&#xA0;</mo><mfrac><mrow><mi>f</mi><mo>(</mo><msub><mi>x</mi><mn>0</mn></msub><mo>)</mo></mrow><mrow><mi>f</mi><mo>'</mo><mo>(</mo><msub><mi>x</mi><mn>0</mn></msub><mo>)</mo></mrow></mfrac><mo>&#xA0;</mo><mo>&#xA0;</mo></math>
-</h3>
+$$
+x_{i+1} = x_i - \frac{f(x_i)}{f'(x_i)}
+$$
 
-The idea is to find a function `f(x)` for which `x = 1/D` is zero. One such
+The idea is to find a function $f(x)$ for which $x = \frac{1}{D}$ is zero. One such
 function is:
 
-<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>f</mi><mo>(</mo><mi>x</mi><mo>)</mo><mo>&#xA0;</mo><mo>=</mo><mo>&#xA0;</mo><mo>(</mo><mn>1</mn><mo>/</mo><mi>x</mi><mo>)</mo><mo>&#xA0;</mo><mo>-</mo><mo>&#xA0;</mo><mi>D</mi></math>
+$$
+f(x) = \frac{1}{x} - D
+$$
 
-(Substitue `x = 1/D` in the above equation and it should result in zero)
+(Substitue $x = \frac{1}{D}$ in the above equation and it should result in zero)
 
-Next, we find `f'(x)` and substitue it in the NM equation to give us an equation
+Next, we find $f'(x)$ and substitue it in the NM equation to give us an equation
 that allows successive improvements.
 
-<h3 align="center">
-<math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mi>x</mi><mrow><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>&#xA0;</mo><mo>=</mo><mo>&#xA0;</mo><msub><mi>x</mi><mi>i</mi></msub><mo>-</mo><mfrac><mrow><mn>1</mn><mo>/</mo><msub><mi>x</mi><mi>i</mi></msub><mo>&#xA0;</mo><mo>-</mo><mo>&#xA0;</mo><mi>D</mi></mrow><mrow><mo>-</mo><mn>1</mn><mo>/</mo><msup><msub><mi>x</mi><mi>i</mi></msub><mn>2</mn></msup></mrow></mfrac><mo>&#xA0;</mo><mo>=</mo><msub><mi>x</mi><mi>i</mi></msub><mo>&#xA0;</mo><mo>(</mo><mn>2</mn><mo>&#xA0;</mo><mo>-</mo><mo>&#xA0;</mo><mi>D</mi><msub><mi>x</mi><mi>i</mi></msub><mo>)</mo></math>
-</h3>
+$$
+x_{i+1} = x_i - \frac{\frac{1}{x_i} - D}{- \frac{1}{x_i^2}} = x_i \cdot \left(2 - D x_i\right)
+$$
 
-Astute readers will notice that the result `x₂` (result of the second iteration)
-depends on `x₁` and`x₁` (result of the first iteration) depends on `x₀`. How do
-we calculate `x₀`? This is the problem of initial approximation.
+Astute readers will notice that the result $x_{i+1}$ depends on $x_i$ (the
+previous iteration) i.e. $x_2$ depends on $x_1$ and $x_1$ depends on $x_0$
+How do we calculate $x_0$? This is the problem of initial approximation.
 
 ### Initial Approximation to the Reciprocal
 
-Lest the curtain be drawn too soon, here's the final equation for calculating
-`x₀`, provided `D` has been scaled to be in the range `[0.5,1]`
+Lest the curtain be drawn too soon, here is the final equation for calculating
+$x_0$, provided $D$ has been scaled to be in the range $[0.5, 1]$:
 
-```
-x₀ = 48/17 - 32/17 * D
-```
+$$
+x_0 = \frac{48}{17} - \frac{32}{17} D
+$$
 
-We notice that the equation at hand is a **linear**, **smooth** and
-**non-periodic** function. In numerical algorithms like division, the goal isn't
-necessarily the smallest average error, but guaranteeing the worst−case error
-(∣ε₀∣) is as small as possible. This predictability is important because the
+This equation is a **linear**, **smooth**, and **non-periodic** function. In
+numerical algorithms like division, the goal is not necessarily the smallest
+average error, but guaranteeing the **worst-case error** ($\vert \epsilon_0
+\vert$) is as small as possible. This predictability is important because the
 initial error directly determines the number of Newton-Raphson iterations
-required to reach full machine precision. 
+required to reach full machine precision.
 
-We wish to calculate an approximation for this function such that the
-**worst-case error** is minimal. The right tool for this job is the [Chebyshev
-Equioscillation Theorem](https://en.wikipedia.org/wiki/Equioscillation_theorem). 
+We wish to calculate an approximation for the function $1/D$ such that the
+worst-case error is minimal. The right tool for this job is the [Chebyshev
+Equioscillation Theorem](https://en.wikipedia.org/wiki/Equioscillation_theorem).
 
-Chebyshev approximation is used because it provides the
-Best Uniform Approximation (or Minimax Approximation). This means that out of
-all possible polynomials of a given degree, the Chebyshev method yields the one
-that minimizes the maximum absolute error across the entire target interval.
+Chebyshev approximation is used because it provides the **Best Uniform
+Approximation** (or Minimax Approximation). This means that out of all possible
+polynomials of a given degree, the Chebyshev method yields the one that
+minimizes the maximum absolute error across the entire target interval.
 
-We start with formulating the error function on whoch equioscillation will be
-applied. The error function for figuring out the reciprocal `x₀ = 1/D` using a
-simple straight line `x₀ = T₀ + T₁·D` (a linear equation) tells us how far off
-our guess is from the perfect answer. Because we want the total result `D·x₀` to
-be near `1`, we make the error function `f(D)` measure the difference between
-that product and `1`. The formula is `f(D) = 1 - D·x₀`. When we plug in the
-straight-line guess, the formula becomes: 
+We start by formulating the error function on which equioscillation will be
+applied. The error function for figuring out the reciprocal $x_0 = 1/D$ using a
+simple straight line $x_0 = T_0 + T_1 \cdot D$ (a linear equation) tells us how
+far off our guess is from the perfect answer. Because we want the total result
+$D \cdot x_0$ to be near $1$, we make the error function $f(D)$ measure the
+difference between that product and $1$. The formula is $f(D) = 1 - D \cdot
+x_0$. When we plug in the straight-line guess, the formula becomes:
 
-```
-f(D) = 1 - T₀·D - T₁·D²
-```
+$$
+f(D) = 1 - T_0 D - T_1 D^2
+$$
 
-The main goal is to pick the numbers `T₀` and `T₁` that make the absolute value
-of this error `f(D)` as small as possible everywhere in the range. This is
-exactly what the Chebyshev method does.
+The main goal is to pick the numbers $T_0$ and $T_1$ that minimize the absolute
+value of this error $f(D)$ everywhere in the range. This is exactly what the
+Chebyshev method does.
 
 Before we apply the theorem on the error equation, we need to constrain the
-values that `D` can take. Bounding D guarantees that the starting error is small
-enough for the subsequent iterations to converge quickly and predictably to full
-fixed-point precision. Without this bound, a much more complex, higher-degree
-polynomial would be needed, defeating the efficiency goal. We bound `D` to be
-`[0.5,1]`. In code, this scaling can be achieved through simple bit-shifts
-(exemplified later in the code). As long as we scale the numerator too, we
-should be good.
+values that $D$ can take. Bounding $D$ guarantees that the starting error is
+small enough for the subsequent iterations to converge quickly and predictably
+to full fixed-point precision. Without this bound, a much more complex,
+higher-degree polynomial would be needed, defeating the efficiency goal. We
+bound $D$ to be $[0.5, 1]$. In code, this scaling can be achieved through simple
+bit-shifts. As long as we scale the numerator too, the result remains correct.
 
 The theorem states that a polynomial is the best uniform approximation to a
 continuous function over an interval if and only if the error function
 alternates between its maximum positive and maximum negative values at least
-(n+2) times, where `n` is the degree of the polynomial.
-
-The theorem requires the maximum error to occur at the two endpoints (D=1/2 and
-D=1) and the local extremum (Dmin) between them.  
+$(n+2)$ times, where $n$ is the degree of the polynomial. Since $n=1$ (linear
+approximation), we need $1+2=3$ alternating extrema: at the two endpoints
+($D=1/2$ and $D=1$) and the local extremum ($D_{min}$) between them.
 
 The location of the local extremum is found by setting the derivative to zero:
 
-```
-F'(D) = -T0 - 2T1 D = 0, which gives:
-D_min = - T0 / (2T1)
-```
+$$
+f'(D) = -T_0 - 2T_1 D = 0, \text{ which gives: }
+D_{min} = - \frac{T_0}{2T_1}
+$$
 
 The first condition of the theorem is that the error magnitude is equal at
-endpoints i.e. 
+endpoints, i.e., $f(1/2) = f(1)$.
 
-```
-f(1/2) = f(1)
+$$
+1 - \frac{T_0}{2} - \frac{T_1}{4} = 1 - T_0 - T_1
+$$
 
-1 - T₀/2 - T₁/4 = 1 - T₀ - T₁ 
-```
 This simplifies to:
 
-```
-T₀ = - (3/2)·T₁
-```
+$$
+T_0 = - \frac{3}{2} T_1
+$$
+
 The second condition states that the error at endpoints must be the negative of
-the error at the extremum i.e. 
+the error at the extremum, i.e., $f(1) = -f(D_{min})$.
 
-```
-f(1) = -f(Dmin)
-1 - T0 - T1 = - (1 + T0^2 / (4T1))
-```
-Substituing the value of T0 from above, 
+$$
+1 - T_0 - T_1 = - \left( 1 - T_0 D_{min} - T_1 D_{min}^2 \right)
+$$
 
-```
-1 - (-3/2 * T1) - T1 = -1 - ((-3/2 * T1)^2 / (4T1))
-1 + (1/2)T1 = -1 - (9T1 / 16)
-```
-Solving this linear equation for T1:
-```
-2 = -17T1 / 16 
-T1 = - 32/17
-```
-Substituting T1 back into the original equation to find T0:
-```
-T0 = -(3/2) * (-32/17) 
-T0 = 48/17
-```
+Substituting $D_{min}$ and simplifying:
 
-The resulting linear approximation is X0 = T0 + T1 D:
+$$
+1 - T_0 - T_1 = - \left( 1 + \frac{T_0^2}{4T_1} \right)
+$$
 
-```
-X0 = 48/17 - 32/17 * D
-```
+Substituting the value of $T_0$ from above:
 
-This equation gives us an initial estimate for the reciprocal that can be
-refined by iterations of the NR equation that we found earlier.
+$$
+1 - \left( - \frac{3}{2} T_1 \right) - T_1 = -1 - \frac{(-3/2 \cdot T_1)^2}{4T_1}
+1 + \frac{1}{2} T_1 = -1 - \frac{9T_1}{16}
+$$
+
+Solving this linear equation for $T_1$:
+
+$$
+2 = - \frac{17T_1}{16}
+T_1 = - \frac{32}{17}
+$$
+
+Substituting $T_1$ back into the original equation to find $T_0$:
+
+$$
+T_0 = - \frac{3}{2} \cdot \left( - \frac{32}{17} \right)
+T_0 = \frac{48}{17}
+$$
+
+The resulting linear approximation is $x_0 = T_0 + T_1 D$:
+
+$$
+x_0 = \frac{48}{17} - \frac{32}{17} D
+$$
+
+This equation gives the optimal initial estimate for the reciprocal that can be
+refined by iterations of the Newton-Raphson equation.
 
 ## Implementation
 
-(A [link](https://gist.github.com/bojle/60f9f9c0a7b0678a2f6b51553217ab6a) to the complete implementation)
+(For convenience, here's a
+[link](https://gist.github.com/bojle/60f9f9c0a7b0678a2f6b51553217ab6a) to the
+complete implementation)
 
-The original rationale for doing this was two-fold:
+The original rationale for this implementation was two-fold:
 
-1. Lack of division circuitry.
-2. Lack of support for floating point types.
+1.  **Lack of division circuitry.**
+2.  **Lack of support for floating point types.**
 
-Lack of division circuitry has been dealt with through the design of the
-algorithm above. Lack of floating point types can be dealt with by using
+Lack of division circuitry is solved by the algorithm design (reciprocal
+multiplication). Lack of floating point types is dealt with by using
 [Fixed-Point notation](https://en.wikipedia.org/wiki/Fixed-point_arithmetic).
-Fixed point allows us to get away with storing everything in integers and
-operate using bit-shift operations, which tend to be cost efficient.
+Fixed point allows storing everything in integers and operating using
+**bit-shift operations**, which are highly cost-efficient on embedded hardware.
 
-Here's an implementation of a fixed point types in C++:
+Here's an implementation of a fixed-point type in C++:
 
-```
+```cpp
 #include <iostream>
 #include <cmath>
 #include <cstdint>
@@ -260,18 +274,18 @@ public:
     }
 };
 ```
-The template parameters of this class are the split ratio of the underlying
-fixed point type. This is fixed at compiler time for an instance of the type.
-For example, `FixedPoint<8,16>` would mean the underlying type is a 16 bit
-integer (`int16_t`) and the scale value would be `2^8` (`1 << 8`). Additionally,
-for convenience, we implement addition, substraction and multiplication.
-The central idea that this class makes apparent is all *operations* are
-performed on the integer directly and *conversion* involves scaling and
-de-scaling with the scale value that stays constant.
+The template parameters specify the fractional and total bit lengths. For
+example, `FixedPoint<8, 16>` uses a 16-bit integer with the scale $2^8$. The
+central idea is that all operations are performed on the integer directly, and
+conversion involves scaling and de-scaling with the constant scale value.
 
-We can now introduce the division algorithm in its entirety:
+The division function below implements the 4-part process: **Normalization**,
+**Initial Approximation**, **NR Iterations**, and **Multiplication with
+Numerator**. We use the higher precision `FixedPoint<16, 32>`
+(`Fx16_32`) for intermediate calculations to minimize approximation
+error before truncating to the final `Fx8_16` result.
 
-```
+```cpp
 using Fx8_16 = FixedPoint<8, 16>;
 using Fx16_32 = FixedPoint<16, 32>;
 
@@ -293,23 +307,23 @@ Fx8_16 fxdiv_corrected(int n, int d) {
     Fx16_32 d_scaled = Fx16_32::fromRaw(static_cast<int32_t>(scaled_val_raw >> INTERPRETATION_SHIFT));
     Fx16_32 n_scaled = Fx16_32::fromRaw(static_cast<int32_t>(scaled_val_n_raw >> INTERPRETATION_SHIFT));
 
-    // 2. Initial approximate calculation
+    // 2. Initial approximate calculation (Chebyshev: X0 = 48/17 - 32/17 * D)
     Fx16_32 a {2.8235294f}; // 48/17
     Fx16_32 b {1.8823529f}; // 32/17
     Fx16_32 initial_approx = a - (b * d_scaled);
 
     // 3. Newton-Raphson iterations
     Fx16_32 val = initial_approx;
-    val = val * (Fx16_32{2.f} - (d_scaled * val)); // E1
-    val = val * (Fx16_32{2.f} - (d_scaled * val)); // E2
-    val = val * (Fx16_32{2.f} - (d_scaled * val)); // E3
-    val = val * (Fx16_32{2.f} - (d_scaled * val)); // E4
+    val = val * (Fx16_32{2.f} - (d_scaled * val)); // E1: Precision ~8 bits
+    val = val * (Fx16_32{2.f} - (d_scaled * val)); // E2: Precision ~16 bits (sufficient for Fx16_32)
+    val = val * (Fx16_32{2.f} - (d_scaled * val)); // E3: Conservative overkill
+    val = val * (Fx16_32{2.f} - (d_scaled * val)); // E4: Conservative overkill
 
     // 4. Multiplication with Numerator
     Fx16_32 res_16_32 = n_scaled * val;
 
     if (result_is_negative) {
-        // Simple negation (assumes FixedPoint has a working negation operator or multiply by -1)
+        // Simple negation
         res_16_32 = res_16_32 * -1.0f;
     }
 
@@ -326,29 +340,16 @@ Fx8_16 fxdiv_corrected(int n, int d) {
 }
 ```
 
-The algorithm had 4 parts: Normalization, Initial Approximation, NR Iterations,
-Multiplication with Numerator. These are quite evident in the function above.
-For intermidiate calculations, we use `FixedPoint<16,32>`, final results are in
-`FixedPoint<8,16>`. There's something peculiar and previously un-explained in
-this code: `INTERPRETATION_SHIFT` and `TRUNCATION_SHIFT`. These are there to
-account for **correctly lining up the decimal points** at the start and the end
-of the calculation.
+The `INTERPRETATION_SHIFT` and `TRUNCATION_SHIFT` variables account for
+correctly aligning the binary point.
 
-The **INTERPRETATION_SHIFT** fixes the input value. When the divisor D is
-normalized, the number is secretly set up with 31 digits after the decimal
-(Q1.31). Since our math is being done in the Q15.16 format (only 16 digits after
-the decimal), we have to move the value's decimal point to the left by **15
-positions** (31 - 16). This right-shift makes sure the normalized input is read
-as a number between 0.5 and 1.0, not as a very large integer.
+  * The `INTERPRETATION_SHIFT` (31 - 16 = 15) adjusts the $Q1.31$ normalized
+    input to the $Q15.16$ format used for calculation, ensuring the value is
+interpreted as being in the range $[0.5, 1.0]$.
+  * The `TRUNCATION_SHIFT` (16 - 8 = 8) reduces the $Q15.16$ result to the
+    final $Q7.8$ output format, discarding the lower 8 fractional bits.
 
-The **TRUNCATION_SHIFT** manages the final output. The math produces a
-high-precision number in the Q15.16 format. But the function needs to return the
-result in the lower precision Q7.8 format (8 fractional bits). To shrink the
-result to fit, we must move the decimal point left by **8 positions** (16 - 8).
-This right-shift throws away the extra low-precision bits so the result matches
-the final output type.
-
-Let's compile and run this on an example:
+The code is compiled and run with an example:
 
 ```cpp
 int main() {
@@ -368,44 +369,55 @@ $ ./a
 Approximate division of 3/4: 0.74609375
 Real division of 3/4: 0.75
 ```
-Voila! 3 divided by 4 by our method results in `0.74609375` which is not that
-far from the actual answer of `0.75`.
+
+The result $0.74609375$ is produced. The error is $\vert 0.75 - 0.74609375 \vert
+= 0.00390625$. This error is precisely $2^{-8}$, confirming that the final
+precision is limited by the $Q7.8$ output format's smallest bit, which is a key
+design feature of fixed-point systems. In fact, the number $0.00390625$ has a
+name: [ULP](https://en.wikipedia.org/wiki/Unit_in_the_last_place). Due to our
+use of $Q7.8$ as the resultant type, it is impossible to precisely express
+$0.75$. What we can express is $0.75 - ULP$ and $0.75 + ULP$
 
 ## Optimizations
 
-What has been implemented is quite reasonable, but it can be optimized further. 
+### Power-of-Two Denominator Shortcut
 
-1.  Power-of-Two Denominator Shortcut
+When the denominator $D$ is a power of two ($\pm 2^k$), the division $N/D$
+simplifies to a **bit shift**. This avoids the computationally expensive
+Newton-Raphson (NR) iterative loop entirely. The check to detect if an integer
+is a power of 2 can be performed in $\mathcal{O}(1)$ time, providing a major
+speed increase for such common cases.
 
-When the denominator d is a power of two (+/- 2^k), the division N/D simplifies
-to a bit shift. This avoids the entire costly iterative Newton-Raphson loop.
-Detecting if an integer is a power of 2 can be done in constant time. One can
-put this check right at the top of the function an drastically speed up
-power-of-two divisions.
+### Exploiting Quadratic Convergence
 
-2. Exploiting quadratic convergence and fraction length of resultant's type.
+One property of NR iteration is **Quadratic Convergence**. Every iteration
+approximately doubles the number of correct bits in the result.
 
-One property of NR iteration is **Quadratic Convergence**. In lay terms, every
-iteration of the invocation of the Newton-Raphson formula, the number of correct
-bits in the result roughly double. After first iteration, 2 bits are correct,
-after second, 4, after third 8. Thus we have a rough idea of how many iterations
-would be required for a given type. The optimization here is to skip NR
-iterations on the basis of FRACTION_LENGTH of the resultant type. We can use
-[constexpr if](https://en.cppreference.com/w/cpp/language/if.html) statements to
-make sure the checks for type length do not affect runtime performance.
+The optimization involves determining the required number of iterations based on
+the fractional length of the resultant type. For a required precision of $16$
+fractional bits (as in the `Fx16_32` intermediate type), only two
+iterations are mathematically necessary after the initial approximation.
+[`constexpr if`](https://en.cppreference.com/w/cpp/language/if.html) statements
+can be used to compile-time check the required precision and eliminate
+unnecessary NR iterations, ensuring no runtime performance penalty.
 
-3. Using a different method to find initial approximation.
+### Alternative Initial Approximation Methods
 
-The [Remex algorithm](https://en.wikipedia.org/wiki/Remez_algorithm) can, in
-theory, generate better approximations using a higher-degree polynomial. The
-tradeoff in this case would be extra cycles to calculate the initial
-approximation at the benefit of not having to do as many NR iterations.
+While the Chebyshev approximation provides the optimal minimax error for the
+initial guess, alternative methods exist:
 
-There are many more that I've missed out. Recent
-[research](https://dl.acm.org/doi/pdf/10.1145/3708472) propose optimization to
-the chebyshev approximation method that we used above using look-up tables and
-magic constants. Moreover, alternative methods such as
-[CORDIC](https://en.wikipedia.org/wiki/CORDIC) can also be tried.
+* [**Remez Algorithm:**](https://en.wikipedia.org/wiki/Remez_algorithm) Can
+  generate even better approximations using a higher-degree polynomial. The
+trade-off is higher initial calculation complexity for the potential benefit of
+requiring fewer subsequent NR iterations.
+* **Look-up Tables (LUTs) and Magic Constants:** [Recent
+  research](https://dl.acm.org/doi/pdf/10.1145/3708472) shows that pre-computed
+LUTs combined with constants can speed up the initial reciprocal approximation.
+* [**CORDIC (Coordinate Rotation Digital
+  Computer):**](https://en.wikipedia.org/wiki/CORDIC) An alternative iterative
+technique that can calculate division and other trigonometric functions using
+only additions and shifts. It offers competitive performance in some hardware
+environments.
 
 ## Conclusion
 

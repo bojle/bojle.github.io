@@ -48,14 +48,19 @@ QuantizeLinear.</p>
 <p>\&lt;image&gt;</p>
 <p>At its core, QuantizeLinear is an elementwise operation, that performs
 the following transformation on each element:</p>
-<p>$$Y = saturate(round(X / scale) + zero_point)$$</p>
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>Y</mi><mo>&#x0003D;</mo><mi>s</mi><mi>a</mi><mi>t</mi><mi>u</mi><mi>r</mi><mi>a</mi><mi>t</mi><mi>e</mi><mo stretchy="false">&#x00028;</mo><mi>r</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>d</mi><mo stretchy="false">&#x00028;</mo><mi>X</mi><mo>&#x0002F;</mo><mi>s</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>e</mi><mo stretchy="false">&#x00029;</mo><mo>&#x0002B;</mo><mi>z</mi><mi>e</mi><mi>r</mi><mi>o</mi><mi>&#x0005F;</mi><mi>p</mi><mi>o</mi><mi>i</mi><mi>n</mi><mi>t</mi><mo stretchy="false">&#x00029;</mo></mrow></math>
 <p>Where:</p>
 <ul>
-<li>$X$ is the floating-point input tensor.</li>
-<li>$scale$ is the quantization scale.</li>
-<li>$zero_point$ is the quantization zero point.</li>
-<li>$round$ typically refers to rounding to the nearest even.</li>
-<li>$saturate$ ensures the result fits within the target integer range
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>X</mi></mrow></math> is the floating-point input tensor.</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>s</mi><mi>c</mi><mi>a</mi><mi>l</mi><mi>e</mi></mrow></math> is the quantization scale.</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>z</mi><mi>e</mi><mi>r</mi><mi>o</mi><mi></mi><mi>k</mi><mi>l</mi><mi>z</mi><mi>z</mi><mi>w</mi><mi>x</mi><mi>h</mi><mi>:</mi><mn>0063</mn><mi></mi><mi>p</mi><mi>o</mi><mi>i</mi><mi>n</mi><mi>t</mi></mrow></math> is the quantization zero point.</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>r</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>d</mi></mrow></math> typically refers to rounding to the nearest even.</li>
+<li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>s</mi><mi>a</mi><mi>t</mi><mi>u</mi><mi>r</mi><mi>a</mi><mi>t</mi><mi>e</mi></mrow></math> ensures the result fits within the target integer range
   (e.g., [0, 255] for <code>uint8</code> or [-128,127] for <code>int8</code>).</li>
 </ul>
 <p>Here's a snippet of C++ code implementing QuantizeLinear:</p>
@@ -159,7 +164,7 @@ scalar C++ implementation of <code>QuantizeLinear</code> against an ARM
 NEON-optimized version. The tests involved processing various input
 tensor sizes, simulating typical activation dimensions in neural
 networks.</p>
-<p>[Insert actual benchmark results here. This section should include:]</p>
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>I</mi><mi>n</mi><mi>s</mi><mi>e</mi><mi>r</mi><mi>t</mi><mi>a</mi><mi>c</mi><mi>t</mi><mi>u</mi><mi>a</mi><mi>l</mi><mi>b</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>h</mi><mi>m</mi><mi>a</mi><mi>r</mi><mi>k</mi><mi>r</mi><mi>e</mi><mi>s</mi><mi>u</mi><mi>l</mi><mi>t</mi><mi>s</mi><mi>h</mi><mi>e</mi><mi>r</mi><mi>e</mi><mo>&#x0002E;</mo><mi>T</mi><mi>h</mi><mi>i</mi><mi>s</mi><mi>s</mi><mi>e</mi><mi>c</mi><mi>t</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>s</mi><mi>h</mi><mi>o</mi><mi>u</mi><mi>l</mi><mi>d</mi><mi>i</mi><mi>n</mi><mi>c</mi><mi>l</mi><mi>u</mi><mi>d</mi><mi>e</mi><mi>:</mi></mrow></math>
 <ul>
 <li><strong>Methodology:</strong> Describe the test setup, including the ARM processor
   used (e.g., Cortex-A53, Cortex-A72), compiler flags, and how timings
