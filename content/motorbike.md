@@ -2,7 +2,5 @@
 
 ![](punter-back.jpeg)
 
-![](punter.jpeg)
-
 ![](punter-side.png)
 
