@@ -38,6 +38,10 @@ Alexander](https://slatestarcodex.com/2017/05/26/the-atomic-bomb-considered-as-h
   model)](https://pharr.org/matt/blog/2018/04/30/ispc-all)
 - [On being a Senior
   Engineer](https://www.kitchensoap.com/2012/10/25/on-being-a-senior-engineer/)
+- [Greppability is an underrated code
+  metric](https://morizbuesing.com/blog/greppability-code-metric/)
+- [You Should Write An Agent](https://fly.io/blog/everyone-write-an-agent/)
+
 
 ## Travel Essays
 
@@ -76,16 +80,14 @@ understand of the problem. Urges a "global" view of the optimization problem.
   explained](https://github.com/mkirchner/linked-list-good-taste)
 - [Programming rants hosted on Felix Winkleman\'s (of chicken scheme
   fame) Website](http://call-with-current-continuation.org/)
-- [Continuations for
-  Curmudgeons](https://intertwingly.net/blog/2005/04/13/Continuations-for-Curmudgeons)
 - [Video Lan (VLC) Hacker\'s
   Guide](https://wiki.videolan.org/Hacker_Guide/Audio_Filters/)
 - [Fast IO on Unixes by the way of \'yes\'
   command](https://www.reddit.com/r/unix/comments/6gxduc/how_is_gnu_yes_so_fast/)
-- [Greppability is an underrated code
-  metric](https://morizbuesing.com/blog/greppability-code-metric/)
 - [Concise Electronics for
   Geeks](https://lcamtuf.coredump.cx/electronics/)
+- [Inside NVIDIA GPUs: Anatomy of high performance matmul
+  kernels](https://www.aleksagordic.com/blog/matmul)
 
 ## Blogs
 
@@ -108,6 +110,7 @@ understand of the problem. Urges a "global" view of the optimization problem.
 - [Min-Yih Hsu (compilers, LLVM)](https://myhsu.xyz/blog/)
 - [Keith Tsui (compilers, LLVM)](https://juejin.cn/user/4432851098679431/posts)a
 - [Fabien Sanglard (graphics, computers)](https://fabiensanglard.net/)
+- [Rich Felker (softwares)](http://ewontfix.com/)
 
 ## Books
 
