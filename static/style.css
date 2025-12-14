@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
+
 @import "code-light.css" (prefers-color-scheme: light);
 @import "code-dark.css" (prefers-color-scheme: dark);
 
@@ -13,7 +15,7 @@
 
 html {
   font-size: 18px;
-  font-family: sans-serif;;
+  font-family: 'Rubik', sans-serif;
 }
 
 body {
@@ -63,10 +65,13 @@ h1 a:hover, h2 a:hover, h3 a:hover, h4 a:hover, h5 a:hover, h6 a:hover {
 
 nav ul {
   list-style: none;
+  display: flex;
+  align-items: center;
 }
 
 nav li {
   display: inline;
+  vertical-align: middle;
 }
 
 nav li + li:before {
@@ -154,4 +159,23 @@ header h1 {
 header h2 {
   display: inline;
   font-size: 1.2rem;
+}
+
+#theme-toggle {
+  background: transparent;
+  color: var(--foreground);
+  border: none; /* Changed from 1px solid var(--foreground-dim) */
+  border-radius: 0.3rem;
+  font-size: 1rem;
+}
+
+.hidden {
+  display: none;
+}
+
+#theme-toggle svg {
+  height: 1em;
+  width: 1em;
+  vertical-align: middle;
+  stroke-width: 3.5;
 }
