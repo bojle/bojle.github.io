@@ -1,16 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
 
 @import "code-light.css" (prefers-color-scheme: light);
-@import "code-dark.css" (prefers-color-scheme: dark);
 
 :root {
-    color-scheme: light dark;
-    --background: light-dark(#f0fdf4, #2B363B);
-    --background-dim: light-dark(#f5f7f9, #2F3C42);
-    --foreground: light-dark(#3b5844, #f0f2f3);
-    --foreground-dim: light-dark(#576379, #d5d5d5);
-    --foreground-heavy: light-dark(#191C22, #f2f4f5);
-    --primary-color: light-dark(#3b5844, #A1C5FF);
+    color-scheme: light;
+    --background: #f0fdf4;
+    --background-dim: #f5f7f9;
+    --foreground: #3b5844;
+    --foreground-dim: #576379;
+    --foreground-heavy: #191C22;
+    --primary-color: #3b5844;
 }
 
 html {
@@ -161,21 +160,4 @@ header h2 {
   font-size: 1.2rem;
 }
 
-#theme-toggle {
-  background: transparent;
-  color: var(--foreground);
-  border: none; /* Changed from 1px solid var(--foreground-dim) */
-  border-radius: 0.3rem;
-  font-size: 1rem;
-}
 
-.hidden {
-  display: none;
-}
-
-#theme-toggle svg {
-  height: 1em;
-  width: 1em;
-  vertical-align: middle;
-  stroke-width: 3.5;
-}
