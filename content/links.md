@@ -122,6 +122,13 @@ understand of the problem. Urges a "global" view of the optimization problem.
   pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/#book-chapters)
 - [OS Design - Xinu Approach](https://xinu.cs.purdue.edu/)
 
+## Humorous and Interesting
+
+- [Can't send a mail beyond 500
+  miles](https://web.mit.edu/jemorris/humor/500-miles)
+- [My car won't start after I buy vanilla
+  ice-cream](https://www.managementpro.com/my-car-wont-start-after-i-buy-vanilla-ice-cream-help-me-figure-out-why/)
+
 ## Other Compilations of Books or Links
 
 - [List of compiler books](https://gcc.gnu.org/wiki/ListOfCompilerBooks)
