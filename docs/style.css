@@ -1,19 +1,17 @@
-@import "code-light.css" (prefers-color-scheme: light);
-@import "code-dark.css" (prefers-color-scheme: dark);
+@import "code-light.css";
 
 :root {
-    color-scheme: light dark;
-    --background: light-dark(#f0fdf4, #2B363B);
-    --background-dim: light-dark(#f5f7f9, #2F3C42);
-    --foreground: light-dark(#3b5844, #f0f2f3);
-    --foreground-dim: light-dark(#576379, #d5d5d5);
-    --foreground-heavy: light-dark(#191C22, #f2f4f5);
-    --primary-color: light-dark(#3b5844, #A1C5FF);
+    --background: #f0fdf4;
+    --background-dim: #f5f7f9;
+    --foreground: #3b5844;
+    --foreground-dim: #576379;
+    --foreground-heavy: #191C22;
+    --primary-color: #3b5844;
 }
 
 html {
   font-size: 18px;
-  font-family: sans-serif;;
+  font-family: sans-serif;
 }
 
 body {
@@ -110,7 +108,6 @@ code {
   padding: 0.1rem 0.2rem;
 }
 
-/* reset the padding for code inside pre */
 pre code {
   padding: 0;
 }
@@ -124,7 +121,6 @@ blockquote {
   padding: 1rem;
 }
 
-/* reset the margin for p inside blockquotes */
 blockquote p {
   margin: 0;
 }
