@@ -147,3 +147,4 @@ understand of the problem. Urges a "global" view of the optimization problem.
 
 - [Simple Strength Fitness](https://ss.fitness/)
 - [Nearlyfreespeech hosting](https://www.nearlyfreespeech.net/)
+- [Cari Institute of Aesthetics](https://cari.institute/)

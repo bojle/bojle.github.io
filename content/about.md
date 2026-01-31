@@ -2,6 +2,8 @@ Title: About Me
 
 ## About Me
 
+![](loom.webp)
+
 "*The life so short, the craft so long to learn*" 
 — Hippocrates
 
