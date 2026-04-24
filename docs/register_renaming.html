@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="Shreeyash Pandey">
+    <meta name="description" content="Shreeyash's Blog">
+    <link rel="alternate" href="/atom.xml" type="application/atom+xml">
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <title> | Shreeyash's Blog</title>
+  </head>
+
+  <body>
+    <header>
+      <h1><a href="/">Thoughts, et cetera.</a></h1>
+      <nav>
+        <h2>Shreeyash's Blog</h2>
+        <ul>
+          <li><h2><a href="/">Blog</a></h2></li>
+          <li><h2><a href="/archive.html">Archive</a></h2></li>
+          <li><h2><a href="/tags/">Tags</a></h2></li>
+          <li><h2><a href="/links.html">Links</a></h2></li>
+          <li><h2><a href="/about.html">About Me</a></h2></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+    
+
+  <h2>Your CPU Has More Registers Than You&rsquo;d Think</h2>
+<p>Let&rsquo;s start with a question: How many registers does your CPU have?</p>
+<p>If you&rsquo;re on a typical AArch64 machine, you&rsquo;d start by listing the general
+purpose registers (x0-x31), the SIMD registers (Q0-Q31), zero register (xzr),
+the stack pointer (SP), program counter (PC) just to name a few. That adds to a
+total of 66 registers. However, if we were to zoom-in on a die shot for a CPU,
+we won&rsquo;t be finding x0, x1 or any of the other registers. Instead, we&rsquo;ll
+discover a large register file with hundreds of registers. These are often
+called &ldquo;physical registers&rdquo; and are differentiated with &ldquo;architectural
+registers&rdquo; (x0, x1 &hellip;). </p>
+<p>This blog post is an inspection of this circuitry from an algorithmic
+point-of-view and the compiler optimizations it enables.</p>
+<h2>Out-Of-Order Execution</h2>
+<p>Modern, high-performance CPUs execute instructions in
+<a href="https://en.wikipedia.org/wiki/Out-of-order_execution">out-of-order</a> fashion to
+exploit <a href="https://en.wikipedia.org/wiki/Instruction-level_parallelism">instruction-level
+parallelism</a>.  As a
+result, execution pipelines tend to be multi-ported to support parallel
+execution, deep and complex. </p>
+<p>For example, here&rsquo;s the execution pipeline of the <a href="https://documentation-service.arm.com/static/668bc0a369e89f01e39c4668">ARM Neoverse V2
+Microarchitecture
+(PDF)</a>:</p>
+<figure>
+  <img src="neoversev2-pipeline.png" alt="ARM Neoverse V2 Pipeline">
+  <figcaption>ARM Neoverse V2 Pipeline</figcaption>
+</figure>
+
+<p>First two stages of the pipeline are in-order, meaning the <em>fetch</em> unit fetches
+instructions from DRAM in program order and the <em>decode</em> unit goes through these
+instructions also in order. The decode unit is where all the interesting stuff
+happens and its the subject of this post. Post the decode unit, execution
+happens out of order by the parallel execution units.</p>
+<p>Neoverse, pictured above, has 17 different execution units that all operate in
+parallel. As it should be obvious from the names, branch units handle branch
+instructions, integer units; divided for single/multi cycle operations handle
+instructions like add, div and mul.</p>
+<h2>Decode</h2>
+<p>We start with <strong>decode</strong> unit. The decoder figures out how many different
+resources (for example, a slot in the Re-Order Buffer) an instruction may need,
+which execution unit it belongs to and splits an instruction into many
+<a href="https://en.wikipedia.org/wiki/Micro-operation">micro-ops</a>. For example, the
+<code>STP</code> instruction of AArch64 is split into two micro-ops: store-address and
+store-data. Micro-architectures are generally described with an &ldquo;x-wide&rdquo; remark.
+For example, the Neoverse V2 is 4-wide and Apple M1 is 8-wide. The decoder unit
+is where <em>wideness</em> comes from.  4-wide implies the decoder is capable of
+dispatching 4 micro-ops per cycle.</p>
+<h2>Rename</h2>
+<p>Following decoder is <strong>rename/map</strong> unit. Rename maps/allocates a physical
+register for every architectural register. Rename unit is responsible for
+removing false dependencies from a set of instructions so that they can be
+executed out-of-order. Consider this snippet of AArch64 assembly:</p>
+<div class="codehilite"><pre><span></span><code><span class="mf">1</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="n">x3</span><span class="p">,</span><span class="w"> </span><span class="n">x2</span><span class="p">,</span><span class="w"> </span><span class="n">x1</span>
+<span class="mf">2</span><span class="w"> </span><span class="n">sub</span><span class="w"> </span><span class="n">x4</span><span class="p">,</span><span class="w"> </span><span class="n">x3</span><span class="p">,</span><span class="w"> </span><span class="n">x1</span>
+<span class="mf">3</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="n">x3</span><span class="p">,</span><span class="w"> </span><span class="n">x5</span><span class="p">,</span><span class="w"> </span><span class="n">x1</span>
+<span class="mf">4</span><span class="w"> </span><span class="n">mul</span><span class="w"> </span><span class="n">x6</span><span class="p">,</span><span class="w"> </span><span class="n">x8</span><span class="p">,</span><span class="w"> </span><span class="n">x7</span>
+</code></pre></div>
+
+<p>Instruction 2 is clearly dependent of instruction 1&rsquo;s results (written in
+register x3) and instruction 4 depends on instruction 3. At a first glance, it
+may appear that I3 depends I1, but this is a case of Write-After-Write (WAW) and
+is commonly called a &ldquo;false dependency&rdquo; as I3 makes no use of previously written
+value of I1. This would not be a problem if I3 used a register other than x3. </p>
+<p>We can change our code or let the CPU do this automatically. The registers used in
+the snippet are &ldquo;Architectural registers&rdquo;. In a sense, architectural registers
+are hypothetical. If we were to zoom in on the die-shot of a CPU, we will not
+find any registers explicitly named <em>x3</em>. Instead, we find a large register
+file, with hundreds of registers. These are the &ldquo;Physical&rdquo; or real registers.
+Let&rsquo;s call them P1, P2 and so on.</p>
+<p>The renamer maps registers x1, x2 &hellip; to physical registers P1, P2&hellip; It also
+keeps track of when an instruction <strong>retires</strong> so that the physical register
+assigned to it can be reclaimed. </p>
+<p>The hardware that stores the mappings is called the Register Alias
+Table (RAT). Roughly speaking, its a simple key-value map where key is an
+architectural register and the value is a pointer to the physical register in
+the Physical Register File (PRF). </p>
+<p>For the instructions above, this is how the instructions would be renamed as
+they come out of the decoder.</p>
+<table>
+    <tr>
+        <td>Step</td>
+        <td>Arch Instruction</td>
+        <td>Source Lookups</td>
+        <td>Dest Map</td>
+        <td>Physical Instr</td>
+        <td>Relevant RAT</td>
+    </tr>
+    <tr>
+        <td>0</td>
+        <td>(Initial State)</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>x1:P1, x2:P2</td>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>add x3 x2 x1</td>
+        <td>x2:P2, x1:P1</td>
+        <td>x3=P10</td>
+        <td>add P10, P2, P1</td>
+        <td>x3:P10</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>sub x4 x3 x1</td>
+        <td>x3:P10, x1:P1</td>
+        <td>x4=P11</td>
+        <td>sub P11, P10, P1</td>
+        <td>x4:P11</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>add x3 x5 x1</td>
+        <td>x5:P5, x1:P1</td>
+        <td>x3=P12</td>
+        <td>add P12, P5, P1</td>
+        <td>x3:P12</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>mul x6 x8 x7</td>
+        <td>x8:P8, x7:P7</td>
+        <td>x6=P13</td>
+        <td>mul P13, P8, P7</td>
+        <td>x6:P13</td>
+    </tr>
+</table>
+
+<p>Initially, I1 will cause x2 and x1 to be mapped to P1, P2 and x3 (which is a
+destination regsiter) will be mapped to P10. I2, which is clearly dependent on
+I1 (via x3) will correctly recognize the dependency through P10. I3, which had a
+false dependency (Write-After-Write) on x3 will be rectified as its destination
+register will be renamed to P12. Finally, I4, which was independent of the other
+three instructions will have new physical register assigned to it. </p>
+<p>The converted instructions can be seen in the &lsquo;Physical Inst&rsquo; column of the
+table above. Looking at the new instructions, its evident that there are no
+false dependencies present in the instructions now.</p>
+<h2>Optimizations Enabled By The Renamer</h2>
+<p>In the previous section, we saw how renaming enabled the CPU to schedule
+instructions out-of-order. As OoO execution enabled ILP which directly affects
+the throughput, this is the single biggest optimization made possible by the
+Renamer.</p>
+<p>The renamer provides a very important optimization in the form of 0-cycle or
+issue-less instructions. Consider the following snippet:</p>
+<div class="codehilite"><pre><span></span><code>orr x1, xzr, x2
+</code></pre></div>
+
+<p>this is <code>x1 = 0 | x2</code> which is essentially an assignment of x2 to x1. Since x1
+and x2 are mapped to some physical registers, this instruction can be taken care
+of during the rename stage by assigning x2&rsquo;s physical register to x1. This makes
+it an issue-less instruction or a zero cycle instruction. We can verify this with
+<code>llvm-mca</code>:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;orr x1, xzr, x2&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>llvm-mca<span class="w"> </span>-mcpu<span class="o">=</span>neoverse-v2
+Resource<span class="w"> </span>pressure<span class="w"> </span>by<span class="w"> </span>instruction:
+<span class="o">[</span><span class="m">0</span>.0<span class="o">]</span><span class="w">  </span><span class="o">[</span><span class="m">0</span>.1<span class="o">]</span><span class="w">  </span><span class="o">[</span><span class="m">1</span>.0<span class="o">]</span><span class="w">  </span><span class="o">[</span><span class="m">1</span>.1<span class="o">]</span><span class="w">  </span><span class="o">[</span><span class="m">2</span>.0<span class="o">]</span><span class="w">  </span><span class="o">[</span><span class="m">2</span>.1<span class="o">]</span><span class="w">  </span><span class="o">[</span><span class="m">2</span>.2<span class="o">]</span><span class="w">  </span><span class="o">[</span><span class="m">3</span><span class="o">]</span><span class="w">    </span><span class="o">[</span><span class="m">4</span>.0<span class="o">]</span><span class="w">  </span><span class="o">[</span><span class="m">4</span>.1<span class="o">]</span><span class="w">  </span><span class="o">[</span><span class="m">5</span><span class="o">]</span><span class="w">    </span><span class="o">[</span><span class="m">6</span><span class="o">]</span><span class="w">    </span><span class="o">[</span><span class="m">7</span><span class="o">]</span><span class="w">    </span><span class="o">[</span><span class="m">8</span><span class="o">]</span><span class="w">    </span><span class="o">[</span><span class="m">9</span><span class="o">]</span><span class="w">    </span><span class="o">[</span><span class="m">10</span><span class="o">]</span><span class="w">   </span><span class="o">[</span><span class="m">11</span><span class="o">]</span><span class="w">   </span><span class="o">[</span><span class="m">12</span><span class="o">]</span><span class="w">   </span><span class="o">[</span><span class="m">13</span><span class="o">]</span><span class="w">   </span><span class="o">[</span><span class="m">14</span><span class="o">]</span><span class="w">   </span>Instructions:
+<span class="w"> </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">      </span>-<span class="w">     </span>mov<span class="w">  </span>x1,<span class="w"> </span>x2
+</code></pre></div>
+
+<p>The table above shows that the instruction consumes zero resources from the
+execution units. It is handled entirely in the rename stage.</p>
+<p>Here&rsquo;s another snippet:</p>
+<div class="codehilite"><pre><span></span><code>mov x1, #4
+</code></pre></div>
+
+<p>This is <em>constant assignment</em>. While some architectures can handle this at the
+rename stage, it is not always the case. On Neoverse V2, a constant assignment
+still requires an execution unit:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;mov x1, #4&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>llvm-mca<span class="w"> </span>-mcpu<span class="o">=</span>neoverse-v2
+Resource<span class="w"> </span>pressure<span class="w"> </span>by<span class="w"> </span>instruction:
+...<span class="w"> </span><span class="o">[</span><span class="m">4</span>.0<span class="o">]</span><span class="w">  </span><span class="o">[</span><span class="m">4</span>.1<span class="o">]</span><span class="w">  </span><span class="o">[</span><span class="m">5</span><span class="o">]</span><span class="w">    </span><span class="o">[</span><span class="m">6</span><span class="o">]</span><span class="w">    </span><span class="o">[</span><span class="m">7</span><span class="o">]</span><span class="w">    </span><span class="o">[</span><span class="m">8</span><span class="o">]</span><span class="w">    </span><span class="o">[</span><span class="m">9</span><span class="o">]</span><span class="w">    </span><span class="o">[</span><span class="m">10</span><span class="o">]</span><span class="w">   </span><span class="o">[</span><span class="m">14</span><span class="o">]</span><span class="w">   </span>Instructions:
+...<span class="w">  </span>-<span class="w">      </span>-<span class="w">     </span><span class="m">0</span>.16<span class="w">   </span><span class="m">0</span>.16<span class="w">   </span><span class="m">0</span>.17<span class="w">   </span><span class="m">0</span>.17<span class="w">   </span><span class="m">0</span>.17<span class="w">   </span><span class="m">0</span>.17<span class="w">    </span>-<span class="w">     </span>mov<span class="w">  </span>x1,<span class="w"> </span><span class="c1">#4</span>
+</code></pre></div>
+
+<p>Wait, why does it show 0.16 and 0.17? This is because the instruction can be
+handled by any of the 6 integer units (<code>[5]</code> through <code>[10]</code>), and <code>llvm-mca</code>
+shows the average pressure across them.</p>
+<p>While a zero cycle instruction sounds exciting, it&rsquo;s important to note that
+these do occupy space in the fetch and decode part of the pipeline. They are not
+really <em>free</em>. Where they do help is freeing up the execution pipeline so that
+compute isn&rsquo;t hampered by register-clear/register-move type trivial
+instructions.</p>
+<h2>References</h2>
+<p>These are some of the documents that I used to understand register renaming and
+other related concepts:</p>
+<ul>
+<li><a href="https://github.com/name99-org/AArch64-Explore/blob/main/vol1%20M1%20Explainer.nb.pdf">Apple M1
+  Explainer</a></li>
+<li><a href="https://dougallj.github.io/applecpu/firestorm.html">Firestorm Overview by Dougall
+  Jones</a></li>
+<li><a href="https://documentation-service.arm.com/static/668bc0a369e89f01e39c4668">Neoverse V2 Optimization Manual</a></li>
+<li><a href="https://www.agner.org/optimize/microarchitecture.pdf">The microarchitecture of Intel, AMD and VIA CPUs by Agner
+  Fog</a></li>
+</ul>
+
+
+    </main>
+
+    <footer>
+      <p>This website was built with <a href="https://github.com/venthur/blag">blag</a>.
+      <br>
+      Subscribe to the <a href="/atom.xml">atom feed</a>.
+      <br>
+      © 2025, Shreeyash Pandey 
+      </p>
+    </footer>
+  </body>
+
+</html>

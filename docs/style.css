@@ -37,6 +37,25 @@ img {
   max-width: 100%;
 }
 
+figure {
+  margin: 2rem 0;
+  counter-increment: figure-counter;
+}
+
+figcaption {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--foreground-dim);
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+figcaption::before {
+  content: "Fig " counter(figure-counter) ": ";
+  font-weight: bold;
+  font-style: normal;
+}
+
 h1,
 h2,
 h3,
@@ -123,6 +142,24 @@ blockquote {
 
 blockquote p {
   margin: 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+th, td {
+  border: 1px solid var(--foreground-dim);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+table tr:first-child td, th {
+  background-color: var(--background-dim);
+  color: var(--foreground-heavy);
+  font-weight: bold;
 }
 
 body > header {
