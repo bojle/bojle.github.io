@@ -1,5 +1,196 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Thoughts, et cetera.</title><link href="https://fp32.org/" rel="alternate"/><link href="https://fp32.org/atom.xml" rel="self"/><id>https://fp32.org/</id><updated>2026-01-30T00:00:00+05:30</updated><subtitle>Shreeyash's Blog</subtitle><entry><title>Lockdown Was the Best Thing to Happen to Me</title><link href="https://fp32.org/lockdown_was_the_best.html" rel="alternate"/><published>2026-01-30T00:00:00+05:30</published><updated>2026-01-30T00:00:00+05:30</updated><author><name>Shreeyash Pandey</name></author><id>tag:fp32.org,2026-01-30:/lockdown_was_the_best.html</id><summary type="html">Lockdown Was the Best Thing to Happen to Me</summary><content type="html">&lt;p&gt;I joined university for an engineering degree in the August of 2019. Few months
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Thoughts, et cetera.</title><link href="https://fp32.org/" rel="alternate"/><link href="https://fp32.org/atom.xml" rel="self"/><id>https://fp32.org/</id><updated>2026-04-24T00:00:00+05:30</updated><subtitle>Shreeyash's Blog</subtitle><entry><title>Your CPU Has More Registers Than You'd Think</title><link href="https://fp32.org/register_renaming.html" rel="alternate"/><published>2026-04-24T00:00:00+05:30</published><updated>2026-04-24T00:00:00+05:30</updated><author><name>Shreeyash Pandey</name></author><id>tag:fp32.org,2026-04-24:/register_renaming.html</id><summary type="html">Your CPU Has More Registers Than You'd Think</summary><content type="html">&lt;p&gt;Let&amp;rsquo;s start with a question: How many registers does your CPU have?&lt;/p&gt;
+&lt;p&gt;If you&amp;rsquo;re on a typical AArch64 machine, you&amp;rsquo;d start by listing the general
+purpose registers (x0-x31), the SIMD registers (Q0-Q31), zero register (xzr),
+the stack pointer (SP), program counter (PC) just to name a few. That adds to a
+total of 66 registers. However, if we were to zoom-in on a die shot for a CPU,
+we won&amp;rsquo;t be finding x0, x1 or any of the other registers. Instead, we&amp;rsquo;ll
+discover a large register file with hundreds of registers. These are often
+called &amp;ldquo;physical registers&amp;rdquo; and are differentiated from &amp;ldquo;architectural
+registers&amp;rdquo; (x0, x1 &amp;hellip;). &lt;/p&gt;
+&lt;p&gt;This blog post is an inspection of this circuitry from an algorithmic
+point of view and the compiler optimizations it enables.&lt;/p&gt;
+&lt;h2&gt;Out-Of-Order Execution&lt;/h2&gt;
+&lt;p&gt;Modern, high-performance CPUs execute instructions in
+&lt;a href="https://en.wikipedia.org/wiki/Out-of-order_execution"&gt;out-of-order&lt;/a&gt; fashion to
+exploit &lt;a href="https://en.wikipedia.org/wiki/Instruction-level_parallelism"&gt;instruction-level
+parallelism&lt;/a&gt;.  As a
+result, execution pipelines tend to be multi-ported to support parallel
+execution, deep and complex. &lt;/p&gt;
+&lt;p&gt;For example, here&amp;rsquo;s the execution pipeline of the &lt;a href="https://documentation-service.arm.com/static/668bc0a369e89f01e39c4668"&gt;ARM Neoverse V2
+Microarchitecture
+(PDF)&lt;/a&gt;:&lt;/p&gt;
+&lt;figure&gt;
+  &lt;img src="neoversev2-pipeline.png" alt="ARM Neoverse V2 Pipeline"&gt;
+  &lt;figcaption&gt;ARM Neoverse V2 Pipeline&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;First two stages of the pipeline are in-order, meaning the &lt;em&gt;fetch&lt;/em&gt; unit fetches
+instructions from DRAM in program order and the &lt;em&gt;decode&lt;/em&gt; unit goes through these
+instructions also in order. The decode unit is where all the interesting stuff
+happens and it&amp;rsquo;s the subject of this post. Post the decode unit, execution
+happens out of order by the parallel execution units.&lt;/p&gt;
+&lt;p&gt;Neoverse, pictured above, has 17 different execution units that all operate in
+parallel. As should be obvious from the names, branch units handle branch
+instructions, integer units; divided for single/multi cycle operations handle
+instructions like add, div and mul.&lt;/p&gt;
+&lt;h2&gt;Decode&lt;/h2&gt;
+&lt;p&gt;We start with the &lt;strong&gt;decode&lt;/strong&gt; unit. The decoder figures out how many different
+resources (for example, a slot in the Re-Order Buffer) an instruction may need,
+which execution unit it belongs to and splits an instruction into many
+&lt;a href="https://en.wikipedia.org/wiki/Micro-operation"&gt;micro-ops&lt;/a&gt;. For example, the
+&lt;code&gt;STP&lt;/code&gt; instruction of AArch64 is split into two micro-ops: store-address and
+store-data. Micro-architectures are generally described with an &amp;ldquo;x-wide&amp;rdquo;
+classification. For example, the Neoverse V2 is 4-wide and Apple M1 is 8-wide.
+The decoder unit is where &lt;em&gt;wideness&lt;/em&gt; comes from. 4-wide implies the decoder is
+capable of dispatching 4 micro-ops per cycle.&lt;/p&gt;
+&lt;h2&gt;Rename&lt;/h2&gt;
+&lt;p&gt;Following the decoder is the &lt;strong&gt;rename/map&lt;/strong&gt; unit. The rename unit maps/allocates
+a physical register for every architectural register. It is responsible for
+removing false dependencies from a set of instructions so that they can be
+executed out-of-order. Consider this snippet of AArch64 assembly:&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="mf"&gt;1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;add&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x3&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x1&lt;/span&gt;
+&lt;span class="mf"&gt;2&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;sub&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x4&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x3&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x1&lt;/span&gt;
+&lt;span class="mf"&gt;3&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;add&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x3&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x5&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x1&lt;/span&gt;
+&lt;span class="mf"&gt;4&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;mul&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x6&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x8&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;x7&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Instruction 2 is clearly dependent on instruction 1&amp;rsquo;s results (written in
+register x3) and instruction 4 depends on instruction 3. At a first glance, it
+may appear that I3 depends on I1, but this is a case of Write-After-Write (WAW)
+and is commonly called a &amp;ldquo;false dependency&amp;rdquo; as I3 makes no use of the value
+written by I1. This would not be a problem if I3 used a register other than x3. &lt;/p&gt;
+&lt;p&gt;We can change our code or let the CPU do this automatically. The registers used
+in the snippet are &amp;ldquo;Architectural registers&amp;rdquo;. In a sense, architectural
+registers are hypothetical. If we were to zoom in on the die-shot of a CPU, we
+will not find any registers explicitly named &lt;em&gt;x3&lt;/em&gt;. Instead, we find a large
+register file, with hundreds of registers. These are the &amp;ldquo;Physical&amp;rdquo; or real
+registers. Let&amp;rsquo;s call them P1, P2 and so on.&lt;/p&gt;
+&lt;p&gt;The renamer maps registers x1, x2 &amp;hellip; to physical registers P1, P2&amp;hellip; It also
+keeps track of when an instruction &lt;strong&gt;retires&lt;/strong&gt; so that the physical register
+assigned to it can be reclaimed. &lt;/p&gt;
+&lt;p&gt;The hardware that stores the mappings is called the Register Alias
+Table (RAT). Roughly speaking, it&amp;rsquo;s a simple key-value map where the key is an
+architectural register and the value is a pointer to the physical register in
+the Physical Register File (PRF). &lt;/p&gt;
+&lt;p&gt;For the instructions above, this is how the instructions would be renamed as
+they come out of the decoder.&lt;/p&gt;
+&lt;table&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Step&lt;/td&gt;
+        &lt;td&gt;Arch Instruction&lt;/td&gt;
+        &lt;td&gt;Source Lookups&lt;/td&gt;
+        &lt;td&gt;Dest Map&lt;/td&gt;
+        &lt;td&gt;Physical Instr&lt;/td&gt;
+        &lt;td&gt;Relevant RAT&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;0&lt;/td&gt;
+        &lt;td&gt;(Initial State)&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;-&lt;/td&gt;
+        &lt;td&gt;x1:P1, x2:P2&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;1&lt;/td&gt;
+        &lt;td&gt;add x3 x2 x1&lt;/td&gt;
+        &lt;td&gt;x2:P2, x1:P1&lt;/td&gt;
+        &lt;td&gt;x3=P10&lt;/td&gt;
+        &lt;td&gt;add P10, P2, P1&lt;/td&gt;
+        &lt;td&gt;x3:P10&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;2&lt;/td&gt;
+        &lt;td&gt;sub x4 x3 x1&lt;/td&gt;
+        &lt;td&gt;x3:P10, x1:P1&lt;/td&gt;
+        &lt;td&gt;x4=P11&lt;/td&gt;
+        &lt;td&gt;sub P11, P10, P1&lt;/td&gt;
+        &lt;td&gt;x4:P11&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;3&lt;/td&gt;
+        &lt;td&gt;add x3 x5 x1&lt;/td&gt;
+        &lt;td&gt;x5:P5, x1:P1&lt;/td&gt;
+        &lt;td&gt;x3=P12&lt;/td&gt;
+        &lt;td&gt;add P12, P5, P1&lt;/td&gt;
+        &lt;td&gt;x3:P12&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;4&lt;/td&gt;
+        &lt;td&gt;mul x6 x8 x7&lt;/td&gt;
+        &lt;td&gt;x8:P8, x7:P7&lt;/td&gt;
+        &lt;td&gt;x6=P13&lt;/td&gt;
+        &lt;td&gt;mul P13, P8, P7&lt;/td&gt;
+        &lt;td&gt;x6:P13&lt;/td&gt;
+    &lt;/tr&gt;
+&lt;/table&gt;
+
+&lt;p&gt;Initially, I1 will cause x2 and x1 to be mapped to P1, P2 and x3 (which is a
+destination register) will be mapped to P10. I2, which is clearly dependent on
+I1 (via x3) will correctly recognize the dependency through P10. I3, which had a
+false dependency (Write-After-Write) on x3 will be rectified as its destination
+register will be renamed to P12. Finally, I4, which was independent of the other
+three instructions will have a new physical register assigned to it. &lt;/p&gt;
+&lt;p&gt;The converted instructions can be seen in the &amp;lsquo;Physical Inst&amp;rsquo; column of the
+table above. Looking at the new instructions, it&amp;rsquo;s evident that there are no
+false dependencies present in the instructions now.&lt;/p&gt;
+&lt;h2&gt;Optimizations Enabled By The Renamer&lt;/h2&gt;
+&lt;p&gt;In the previous section, we saw how renaming enabled the CPU to schedule
+instructions out-of-order. As OoO execution enables ILP which directly affects
+the throughput, this is the single biggest optimization made possible by the
+Renamer.&lt;/p&gt;
+&lt;p&gt;The renamer provides a very important optimization in the form of 0-cycle or
+issue-less instructions. Consider the following snippet:&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;orr x1, xzr, x2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;this is &lt;code&gt;x1 = 0 | x2&lt;/code&gt; which is essentially an assignment of x2 to x1. Since x1
+and x2 are mapped to some physical registers, this instruction can be taken care
+of during the rename stage by assigning x2&amp;rsquo;s physical register to x1. This makes
+it an issue-less instruction or a zero cycle instruction. We can verify this with
+&lt;code&gt;llvm-mca&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;$&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nb"&gt;echo&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;orr x1, xzr, x2&amp;quot;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;llvm-mca&lt;span class="w"&gt; &lt;/span&gt;-mcpu&lt;span class="o"&gt;=&lt;/span&gt;neoverse-v2
+Resource&lt;span class="w"&gt; &lt;/span&gt;pressure&lt;span class="w"&gt; &lt;/span&gt;by&lt;span class="w"&gt; &lt;/span&gt;instruction:
+&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt;.0&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt;.1&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;1&lt;/span&gt;.0&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;1&lt;/span&gt;.1&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;2&lt;/span&gt;.0&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;2&lt;/span&gt;.1&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;2&lt;/span&gt;.2&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;3&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;4&lt;/span&gt;.0&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;4&lt;/span&gt;.1&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;5&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;6&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;7&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;8&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;9&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;10&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;11&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;12&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;13&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;14&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;   &lt;/span&gt;Instructions:
+&lt;span class="w"&gt; &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;     &lt;/span&gt;mov&lt;span class="w"&gt;  &lt;/span&gt;x1,&lt;span class="w"&gt; &lt;/span&gt;x2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;The table above shows that the instruction consumes zero resources from the
+execution units. It is handled entirely in the rename stage.&lt;/p&gt;
+&lt;p&gt;Here&amp;rsquo;s another snippet:&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;mov x1, #4
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;This is &lt;em&gt;constant assignment&lt;/em&gt;. While some architectures can handle this at the
+rename stage, it is not always the case. On Neoverse V2, a constant assignment
+still requires an execution unit:&lt;/p&gt;
+&lt;div class="codehilite"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;$&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nb"&gt;echo&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;mov x1, #4&amp;quot;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;llvm-mca&lt;span class="w"&gt; &lt;/span&gt;-mcpu&lt;span class="o"&gt;=&lt;/span&gt;neoverse-v2
+Resource&lt;span class="w"&gt; &lt;/span&gt;pressure&lt;span class="w"&gt; &lt;/span&gt;by&lt;span class="w"&gt; &lt;/span&gt;instruction:
+...&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;4&lt;/span&gt;.0&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;4&lt;/span&gt;.1&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;5&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;6&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;7&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;8&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;9&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;    &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;10&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="m"&gt;14&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;   &lt;/span&gt;Instructions:
+...&lt;span class="w"&gt;  &lt;/span&gt;-&lt;span class="w"&gt;      &lt;/span&gt;-&lt;span class="w"&gt;     &lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt;.16&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt;.16&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt;.17&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt;.17&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt;.17&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="m"&gt;0&lt;/span&gt;.17&lt;span class="w"&gt;    &lt;/span&gt;-&lt;span class="w"&gt;     &lt;/span&gt;mov&lt;span class="w"&gt;  &lt;/span&gt;x1,&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;#4&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Wait, why does it show 0.16 and 0.17? This is because the instruction can be
+handled by any of the 6 integer units (&lt;code&gt;[5]&lt;/code&gt; through &lt;code&gt;[10]&lt;/code&gt;), and &lt;code&gt;llvm-mca&lt;/code&gt;
+shows the average pressure across them.&lt;/p&gt;
+&lt;p&gt;While a zero cycle instruction sounds exciting, it&amp;rsquo;s important to note that
+these do occupy space in the fetch and decode part of the pipeline. They are not
+really &lt;em&gt;free&lt;/em&gt;. Where they do help is freeing up the execution pipeline so that
+compute isn&amp;rsquo;t hampered by register-clear/register-move type trivial
+instructions.&lt;/p&gt;
+&lt;h2&gt;References&lt;/h2&gt;
+&lt;p&gt;These are some of the documents that I used to understand register renaming and
+other related concepts:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://github.com/name99-org/AArch64-Explore/blob/main/vol1%20M1%20Explainer.nb.pdf"&gt;Apple M1
+  Explainer&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://dougallj.github.io/applecpu/firestorm.html"&gt;Firestorm Overview by Dougall
+  Jones&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://documentation-service.arm.com/static/668bc0a369e89f01e39c4668"&gt;Neoverse V2 Optimization Manual&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.agner.org/optimize/microarchitecture.pdf"&gt;The microarchitecture of Intel, AMD and VIA CPUs by Agner
+  Fog&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</content></entry><entry><title>Lockdown Was the Best Thing to Happen to Me</title><link href="https://fp32.org/lockdown_was_the_best.html" rel="alternate"/><published>2026-01-30T00:00:00+05:30</published><updated>2026-01-30T00:00:00+05:30</updated><author><name>Shreeyash Pandey</name></author><id>tag:fp32.org,2026-01-30:/lockdown_was_the_best.html</id><summary type="html">Lockdown Was the Best Thing to Happen to Me</summary><content type="html">&lt;p&gt;I joined university for an engineering degree in the August of 2019. Few months
 down when the first semester ended and preparation for second began, the news
 about Coronavirus breakout came out (precisely on 31st of December, 2019). I
 remember reading about it but not paying much attention initially.&lt;/p&gt;
